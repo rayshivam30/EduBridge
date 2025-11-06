@@ -23,7 +23,7 @@ declare module "next-auth" {
 }
 
 // Configure NextAuth
-const providers = [
+const providers: AuthOptions['providers'] = [
   Credentials({
     name: "Credentials",
     credentials: {

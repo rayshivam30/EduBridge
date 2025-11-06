@@ -8,9 +8,9 @@ const REPLIES_LIST = (threadId: string, page?: number) => `replies:${threadId}:v
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id: threadId } = context.params
+  const { id: threadId } = await context.params
   const url = request.nextUrl
   const search = new URL(url).searchParams
   const page = Number(search.get("page") || 1)
@@ -40,11 +40,11 @@ const createReplyInput = z.object({ body: z.string().min(1) })
 
 export async function POST(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const { id: threadId } = context.params
+  const { id: threadId } = await context.params
   const { body } = createReplyInput.parse(await request.json())
 
   const reply = await prisma.reply.create({ data: { threadId, body, authorId: session.user.id } })

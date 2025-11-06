@@ -16,9 +16,9 @@ const updateInput = z.object({
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params
+  const { id } = await context.params
   const cached = await redis.get(COURSE_KEY(id))
   if (cached) return NextResponse.json(cached)
   const data = await prisma.course.findUnique({
@@ -32,11 +32,11 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const { id } = context.params
+  const { id } = await context.params
   const body = await request.json().catch(() => ({}))
   const parsed = updateInput.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
@@ -51,10 +51,10 @@ export async function PATCH(
   return NextResponse.json(updated)
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const id = params.id
+  const { id } = await params
   const existing = await prisma.course.findUnique({ where: { id } })
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
   if (existing.createdById !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 })

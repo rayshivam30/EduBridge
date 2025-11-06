@@ -11,9 +11,9 @@ const replyInput = z.object({ threadId: z.string(), body: z.string().min(1) })
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params
+  const { id } = await context.params
   const cached = await redis.get(THREAD_KEY(id))
   if (cached) return NextResponse.json(cached)
   const data = await prisma.thread.findUnique({
@@ -27,11 +27,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const { id } = context.params
+  const { id } = await context.params
   const { body } = replyInput.parse({ ...(await request.json()), threadId: id })
 
   const reply = await prisma.reply.create({ data: { threadId: id, body, authorId: session.user.id } })
