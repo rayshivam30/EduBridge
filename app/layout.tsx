@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Poppins } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Analytics } from "@vercel/analytics/next"
@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   title: "EduBridge - Learn Anywhere. Anytime. Together.",
   description: "Connecting rural and urban students with equal access to learning resources",
   generator: "v0.app",
+}
+
+export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
