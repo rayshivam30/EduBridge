@@ -31,7 +31,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, Alex!</h1>
-          <p className="text-muted-foreground">Here's your learning progress this week</p>
+          <p className="text-muted-foreground">Here{'\''}s your learning progress this week</p>
         </div>
 
         {/* Stats Grid */}

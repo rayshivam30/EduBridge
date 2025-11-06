@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heart, MessageCircle, Share2, Search, Plus, TrendingUp } from "lucide-react"
@@ -137,10 +138,12 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
                           <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{thread.excerpt}</p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
-                              <img
+                              <Image
                                 src={thread.avatar || "/placeholder.svg"}
                                 alt={thread.author}
                                 className="w-5 h-5 rounded-full"
+                                width={20}
+                                height={20}
                               />
                               <span>{thread.author}</span>
                             </div>
@@ -192,10 +195,12 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
                     {/* Original Post */}
                     <Card className="p-6 mb-6">
                       <div className="flex items-start gap-4 mb-4">
-                        <img
+                        <Image
                           src={threads.find((t) => t.id === selectedThread)?.avatar || "/placeholder.svg"}
                           alt="User"
                           className="w-12 h-12 rounded-full"
+                          width={48}
+                          height={48}
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -235,10 +240,12 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
                       {replies.map((reply, idx) => (
                         <Card key={idx} className="p-6">
                           <div className="flex items-start gap-4 mb-4">
-                            <img
+                            <Image
                               src={reply.avatar || "/placeholder.svg"}
                               alt={reply.author}
                               className="w-10 h-10 rounded-full"
+                              width={40}
+                              height={40}
                             />
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
