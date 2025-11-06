@@ -1,8 +1,8 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
-import { LandingPage } from "@/components/landing-page"
+import { Navigation } from "@/components/navigation"
+import { StudentDashboard } from "@/components/student-dashboard"
 
 function pageToPath(page: string): string {
   switch (page) {
@@ -23,25 +23,16 @@ function pageToPath(page: string): string {
   }
 }
 
-export default function Home() {
+export function StudentDashboardClient() {
   const router = useRouter()
-  const { status } = useSession()
-
-  const handleNavigate = (page: string) => {
-    // Landing page buttons should go to login/signup for authentication
-    if (page === "student-dashboard" || page === "teacher-dashboard") {
-      // Redirect to signup page for new users
-      router.push("/signup")
-      return
-    }
-    
-    // For other pages, navigate normally
-    router.push(pageToPath(page))
-  }
+  const onNavigate = (page: string) => router.push(pageToPath(page))
 
   return (
     <div className="min-h-screen bg-background">
-      <LandingPage onNavigate={handleNavigate} />
+      <Navigation currentPage="student-dashboard" onNavigate={onNavigate} />
+      <StudentDashboard onNavigate={onNavigate} />
     </div>
   )
 }
+
+

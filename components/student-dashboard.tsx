@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -19,11 +19,43 @@ import {
 import { BookOpen, Clock, Award, Users, TrendingUp, Play, MessageCircle } from "lucide-react"
 
 interface StudentDashboardProps {
-  onNavigate: (page: string) => void
+  onNavigate?: (page: string) => void
 }
 
 export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
   const [selectedCourse, setSelectedCourse] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [enrollments, setEnrollments] = useState<any[] | null>(null)
+
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch("/api/enrollments", { cache: "no-store" })
+        if (res.ok) {
+          const data = await res.json()
+          setEnrollments(Array.isArray(data) ? data : [])
+        }
+      } catch (_) {
+        // ignore, keep mock
+      } finally {
+        setLoading(false)
+      }
+    }
+    run()
+  }, [])
+
+  const currentCourses = useMemo(
+    () =>
+      (enrollments ?? []).map((e) => ({
+        title: e.course?.title ?? "Course",
+        instructor: `by ${e.course?.createdBy?.name ?? "Instructor"}`,
+        level: e.course?.price && Number(e.course.price) > 0 ? "Paid" : "Free",
+        progress: e.progress ?? 0,
+        id: e.courseId as string,
+      })),
+    [enrollments]
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,11 +134,15 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
               </Button>
             </div>
             <div className="space-y-4">
-              {courses.map((course, idx) => (
+              {(currentCourses.length ? currentCourses : courses).map((course, idx) => (
                 <div
                   key={idx}
                   className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                  onClick={() => onNavigate("course-player")}
+                  onClick={() => {
+                    const cid = (course as any).id as string | undefined
+                    if (cid) window.location.href = `/course-player/${cid}`
+                    else onNavigate?.("course-player")
+                  }}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -140,7 +176,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
             <div className="space-y-3">
               <Button
                 className="w-full justify-start gap-3 h-auto py-3 bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={() => onNavigate("course-player")}
+                onClick={() => onNavigate?.("course-player")}
               >
                 <Play className="w-5 h-5" />
                 <div className="text-left">
@@ -150,7 +186,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
               </Button>
               <Button
                 className="w-full justify-start gap-3 h-auto py-3 bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                onClick={() => onNavigate("ai-tutor")}
+                onClick={() => onNavigate?.("ai-tutor")}
               >
                 <MessageCircle className="w-5 h-5" />
                 <div className="text-left">
@@ -160,7 +196,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
               </Button>
               <Button
                 className="w-full justify-start gap-3 h-auto py-3 bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={() => onNavigate("community-forum")}
+                onClick={() => onNavigate?.("community-forum")}
               >
                 <Users className="w-5 h-5" />
                 <div className="text-left">

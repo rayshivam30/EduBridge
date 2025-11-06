@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowRight, Users, BookOpen, Zap, Globe, Award } from "lucide-react"
@@ -9,6 +10,8 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
+  const router = useRouter()
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -21,7 +24,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               </div>
               <h1 className="text-2xl font-bold text-foreground">EduBridge</h1>
             </div>
-            <nav className="hidden md:flex gap-8">
+            <nav className="hidden md:flex items-center gap-4">
               <button
                 onClick={() => onNavigate("student-dashboard")}
                 className="text-foreground hover:text-primary transition-colors"
@@ -40,6 +43,21 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               >
                 Community
               </button>
+              <div className="flex gap-2 ml-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push("/login")}
+                  className="text-foreground hover:text-primary"
+                >
+                  Login
+                </Button>
+                <Button
+                  onClick={() => router.push("/signup")}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Sign Up
+                </Button>
+              </div>
             </nav>
           </div>
         </div>

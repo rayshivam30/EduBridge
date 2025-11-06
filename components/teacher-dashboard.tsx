@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -20,11 +20,116 @@ import {
 import { Users, BookOpen, TrendingUp, MessageSquare, Plus, Edit, Trash2, Eye, Award, Clock } from "lucide-react"
 
 interface TeacherDashboardProps {
-  onNavigate: (page: string) => void
+  onNavigate?: (page: string) => void
 }
 
 export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
   const [selectedCourse, setSelectedCourse] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [items, setItems] = useState<any[] | null>(null)
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/courses", { cache: "no-store" })
+      if (res.ok) {
+        setItems(await res.json())
+      } else {
+        console.error("Failed to load courses:", res.status)
+        alert("Failed to load courses. Please try again.")
+      }
+    } catch (error) {
+      console.error("Error loading courses:", error)
+      alert("An error occurred while loading courses.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const createCourse = async () => {
+    const title = window.prompt("Course title")
+    if (!title) return
+    const description = window.prompt("Short description") || ""
+    const priceStr = window.prompt("Price (number)", "0") || "0"
+    const price = Number(priceStr) || 0
+    setLoading(true)
+    try {
+      const res = await fetch("/api/courses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description, price, status: "draft" }),
+      })
+      if (!res.ok) {
+        throw new Error(`Failed to create course: ${res.status}`)
+      }
+      await load()
+    } catch (error) {
+      console.error("Error creating course:", error)
+      alert("Failed to create course. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const editCourse = async (id: string) => {
+    const title = window.prompt("New title (leave blank to keep)")
+    const description = window.prompt("New description (leave blank to keep)")
+    const priceStr = window.prompt("New price (leave blank to keep)")
+    const payload: any = {}
+    if (title) payload.title = title
+    if (description) payload.description = description
+    if (priceStr) payload.price = Number(priceStr)
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/courses/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        throw new Error(`Failed to update course: ${res.status}`)
+      }
+      await load()
+    } catch (error) {
+      console.error("Error updating course:", error)
+      alert("Failed to update course. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const deleteCourse = async (id: string) => {
+    if (!window.confirm("Delete this course?")) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/courses/${id}`, { method: "DELETE" })
+      if (!res.ok) {
+        throw new Error(`Failed to delete course: ${res.status}`)
+      }
+      await load()
+    } catch (error) {
+      console.error("Error deleting course:", error)
+      alert("Failed to delete course. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  const list = useMemo(
+    () =>
+      (items ?? []).map((c) => ({
+        id: c.id as string,
+        title: c.title as string,
+        students: c._count?.enrollments ?? 0,
+        completion: 0,
+        status: (c.status ?? "draft") === "published" ? "Active" : "Draft",
+      })),
+    [items]
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,13 +164,12 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
           <Card className="lg:col-span-2 p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-foreground">Your Courses</h3>
-              <Button size="sm" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                <Plus className="w-4 h-4" />
-                New Course
+              <Button onClick={createCourse} disabled={loading} className="gap-2">
+                <Plus className="w-4 h-4" /> Create Course
               </Button>
             </div>
             <div className="space-y-4">
-              {courses.map((course, idx) => (
+              {(list.length ? list : courses).map((course, idx) => (
                 <div
                   key={idx}
                   className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors"
@@ -76,13 +180,13 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                       <p className="text-sm text-muted-foreground">{course.students} students enrolled</p>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" className="gap-2">
+                      <Button onClick={() => (typeof (course as any).id === "string" ? (window.location.href = `/course-player/${(course as any).id}`) : onNavigate?.("course-player"))} variant="ghost" size="sm" className="gap-2">
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="gap-2">
+                      <Button onClick={() => typeof (course as any).id === "string" && editCourse((course as any).id)} variant="ghost" size="sm" className="gap-2">
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="gap-2 text-destructive hover:text-destructive">
+                      <Button onClick={() => typeof (course as any).id === "string" && deleteCourse((course as any).id)} variant="ghost" size="sm" className="gap-2 text-destructive hover:text-destructive">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

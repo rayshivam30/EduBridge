@@ -1,6 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { BookOpen, Home, LogOut } from "lucide-react"
 
 interface NavigationProps {
@@ -9,6 +11,14 @@ interface NavigationProps {
 }
 
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await signOut({ redirect: false })
+    router.push("/")
+    router.refresh()
+  }
+
   return (
     <nav className="border-b border-border bg-background sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -24,10 +34,10 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
           </button>
 
           <div className="flex items-center gap-4">
-          <button
-            onClick={() => onNavigate("landing")}
-            aria-label="Home"
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            <button
+              onClick={() => onNavigate("landing")}
+              aria-label="Home"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 currentPage === "landing" ? "bg-primary/10 text-primary" : "text-foreground hover:text-primary"
               }`}
             >
@@ -35,12 +45,12 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
             </button>
             <Button
               variant="ghost"
-              onClick={() => onNavigate("landing")}
-              aria-label="Exit to landing"
+              onClick={handleLogout}
+              aria-label="Logout"
               className="text-foreground hover:text-primary"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Exit</span>
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>

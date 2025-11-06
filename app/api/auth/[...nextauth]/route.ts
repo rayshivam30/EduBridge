@@ -1,3 +1,3 @@
-import { handlers } from "@/lib/auth"
+export { GET, POST } from "@/lib/auth"
 
-export const { GET, POST } = handlers
+export const dynamic = 'force-dynamic' // Ensure the route is dynamic
