@@ -62,7 +62,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, Alex!</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back!</h1>
           <p className="text-muted-foreground">Here{'\''}s your learning progress this week</p>
         </div>
 
@@ -134,7 +134,12 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
               </Button>
             </div>
             <div className="space-y-4">
-              {(currentCourses.length ? currentCourses : courses).map((course, idx) => (
+              {loading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading your courses...</p>
+                </div>
+              ) : currentCourses.length > 0 ? (
+                currentCourses.map((course, idx) => (
                 <div
                   key={idx}
                   className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer"
@@ -166,7 +171,21 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                     </div>
                   </div>
                 </div>
-              ))}
+                ))
+              ) : (
+                <div className="text-center py-8 border border-dashed rounded-lg">
+                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-2 text-sm font-medium text-foreground">No courses yet</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Get started by enrolling in a course from the catalog.
+                  </p>
+                  <div className="mt-6">
+                    <Button onClick={() => onNavigate?.("courses")}>
+                      Browse Courses
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -262,26 +281,7 @@ const progressData = [
   { name: "Not Started", value: 20, color: "var(--muted)" },
 ]
 
-const courses = [
-  {
-    title: "Web Development Masterclass",
-    instructor: "by Sarah Chen",
-    level: "Intermediate",
-    progress: 65,
-  },
-  {
-    title: "Python for Data Science",
-    instructor: "by Prof. Kumar",
-    level: "Advanced",
-    progress: 42,
-  },
-  {
-    title: "Digital Marketing Basics",
-    instructor: "by Marketing Team",
-    level: "Beginner",
-    progress: 88,
-  },
-]
+// Removed mock courses to only show enrolled courses
 
 const recommendations = [
   {

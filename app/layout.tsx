@@ -14,8 +14,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "EduBridge - Learn Anywhere. Anytime. Together.",
-  description: "Connecting rural and urban students with equal access to learning resources",
-  generator: "v0.app",
+  description: "Connecting rural and urban students with equal access to learning resources"
 }
 
 export const viewport: Viewport = {
