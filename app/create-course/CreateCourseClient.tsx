@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -21,16 +23,27 @@ import {
   FileText,
   Video,
   Link,
-  GripVertical
+  GripVertical,
+  Youtube,
+  ExternalLink,
+  StickyNote
 } from "lucide-react"
 import { Navigation } from "@/components/navigation"
+import { VideoUpload } from "@/components/video-upload"
+
 
 interface Lesson {
   id: string
   title: string
   description: string
-  type: "video" | "text" | "link"
-  content: string
+  contentTypes: string[] // Array to store multiple selected content types
+  videoType?: "upload" | "youtube" // For video content type
+  textContent?: string // For text/notes content
+  externalLinks?: string[] // For external links
+  videoFile?: File | null // For uploaded video (deprecated)
+  videoUrl?: string // For uploaded video URL from Cloudinary
+  videoPublicId?: string // Cloudinary public ID for video
+  youtubeUrl?: string // For YouTube URL or embed code
   order: number
 }
 
@@ -80,8 +93,13 @@ export function CreateCourseClient() {
       id: Date.now().toString(),
       title: "",
       description: "",
-      type: "text",
-      content: "",
+      contentTypes: [],
+      textContent: "",
+      externalLinks: [],
+      videoFile: null,
+      videoUrl: "",
+      videoPublicId: "",
+      youtubeUrl: "",
       order: course.lessons.length + 1
     }
     setEditingLesson(newLesson)
@@ -169,15 +187,24 @@ export function CreateCourseClient() {
 
   const saveLessons = async (courseId: string) => {
     for (const lesson of course.lessons) {
+      const lessonData = {
+        courseId,
+        title: lesson.title,
+        description: lesson.description,
+        contentTypes: lesson.contentTypes,
+        textContent: lesson.textContent,
+        externalLinks: lesson.externalLinks,
+        videoType: lesson.videoType,
+        videoUrl: lesson.videoUrl,
+        videoPublicId: lesson.videoPublicId,
+        youtubeUrl: lesson.youtubeUrl,
+        order: lesson.order
+      }
+      
       await fetch("/api/lessons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courseId,
-          title: lesson.title,
-          content: lesson.content,
-          order: lesson.order
-        })
+        body: JSON.stringify(lessonData)
       })
     }
   }
@@ -320,12 +347,32 @@ export function CreateCourseClient() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <h4 className="font-medium text-foreground">{lesson.title || "Untitled Lesson"}</h4>
-                                <Badge variant="outline" className="text-xs">
-                                  {lesson.type === "video" && <Video className="w-3 h-3 mr-1" />}
-                                  {lesson.type === "text" && <FileText className="w-3 h-3 mr-1" />}
-                                  {lesson.type === "link" && <Link className="w-3 h-3 mr-1" />}
-                                  {lesson.type}
-                                </Badge>
+                                <div className="flex gap-1">
+                                  {lesson.contentTypes.includes("text") && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <StickyNote className="w-3 h-3 mr-1" />
+                                      Text
+                                    </Badge>
+                                  )}
+                                  {lesson.contentTypes.includes("links") && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <ExternalLink className="w-3 h-3 mr-1" />
+                                      Links
+                                    </Badge>
+                                  )}
+                                  {lesson.videoType === "upload" && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <Upload className="w-3 h-3 mr-1" />
+                                      Video
+                                    </Badge>
+                                  )}
+                                  {lesson.videoType === "youtube" && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <Youtube className="w-3 h-3 mr-1" />
+                                      YouTube
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                               <p className="text-sm text-muted-foreground">
                                 {lesson.description || "No description"}
@@ -388,9 +435,12 @@ export function CreateCourseClient() {
                               {index + 1}
                             </span>
                             <div className="flex items-center gap-2">
-                              {lesson.type === "video" && <Video className="w-4 h-4 text-primary" />}
-                              {lesson.type === "text" && <FileText className="w-4 h-4 text-primary" />}
-                              {lesson.type === "link" && <Link className="w-4 h-4 text-primary" />}
+                              <div className="flex gap-1">
+                                {lesson.contentTypes.includes("text") && <StickyNote className="w-4 h-4 text-primary" />}
+                                {lesson.contentTypes.includes("links") && <ExternalLink className="w-4 h-4 text-primary" />}
+                                {lesson.videoType === "upload" && <Upload className="w-4 h-4 text-primary" />}
+                                {lesson.videoType === "youtube" && <Youtube className="w-4 h-4 text-primary" />}
+                              </div>
                               <span className="font-medium">{lesson.title || "Untitled Lesson"}</span>
                             </div>
                           </div>
@@ -447,11 +497,16 @@ interface LessonFormProps {
 
 function LessonForm({ lesson, onSave, onCancel }: LessonFormProps) {
   const [formData, setFormData] = useState<Lesson>(lesson)
+  const [newExternalLink, setNewExternalLink] = useState("")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.title.trim()) {
       alert("Please enter a lesson title")
+      return
+    }
+    if (formData.contentTypes.length === 0) {
+      alert("Please select at least one content type")
       return
     }
     onSave(formData)
@@ -461,9 +516,37 @@ function LessonForm({ lesson, onSave, onCancel }: LessonFormProps) {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  const toggleContentType = (type: string) => {
+    setFormData(prev => ({
+      ...prev,
+      contentTypes: prev.contentTypes.includes(type)
+        ? prev.contentTypes.filter(t => t !== type)
+        : [...prev.contentTypes, type]
+    }))
+  }
+
+  const addExternalLink = () => {
+    if (newExternalLink.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        externalLinks: [...(prev.externalLinks || []), newExternalLink.trim()]
+      }))
+      setNewExternalLink("")
+    }
+  }
+
+  const removeExternalLink = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      externalLinks: prev.externalLinks?.filter((_, i) => i !== index) || []
+    }))
+  }
+
+
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">
@@ -474,61 +557,174 @@ function LessonForm({ lesson, onSave, onCancel }: LessonFormProps) {
             </Button>
           </div>
 
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="lesson-title">Lesson Title *</Label>
-              <Input
-                id="lesson-title"
-                value={formData.title}
-                onChange={(e) => handleChange("title", e.target.value)}
-                placeholder="Enter lesson title"
-              />
+          <div className="grid gap-6">
+            {/* Basic Information */}
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="lesson-title">Lesson Title *</Label>
+                <Input
+                  id="lesson-title"
+                  value={formData.title}
+                  onChange={(e) => handleChange("title", e.target.value)}
+                  placeholder="Enter lesson title"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="lesson-description">Description</Label>
+                <Textarea
+                  id="lesson-description"
+                  value={formData.description}
+                  onChange={(e) => handleChange("description", e.target.value)}
+                  placeholder="Describe what this lesson covers"
+                  rows={3}
+                />
+              </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="lesson-description">Description</Label>
-              <Textarea
-                id="lesson-description"
-                value={formData.description}
-                onChange={(e) => handleChange("description", e.target.value)}
-                placeholder="Describe what this lesson covers"
-                rows={3}
-              />
+            {/* Content Type Selection - First Dropdown */}
+            <div className="grid gap-4">
+              <div className="grid gap-3">
+                <Label>Content Types * (Select multiple)</Label>
+                <div className="grid gap-3">
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="text-notes"
+                      checked={formData.contentTypes.includes("text")}
+                      onCheckedChange={() => toggleContentType("text")}
+                    />
+                    <Label htmlFor="text-notes" className="flex items-center gap-2 cursor-pointer">
+                      <StickyNote className="w-4 h-4" />
+                      Text/Notes
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="external-links"
+                      checked={formData.contentTypes.includes("links")}
+                      onCheckedChange={() => toggleContentType("links")}
+                    />
+                    <Label htmlFor="external-links" className="flex items-center gap-2 cursor-pointer">
+                      <ExternalLink className="w-4 h-4" />
+                      External Links
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Video Content - Second Dropdown */}
+              <div className="grid gap-3">
+                <Label>Video Content (Optional)</Label>
+                <RadioGroup
+                  value={formData.videoType || ""}
+                  onValueChange={(value: "upload" | "youtube") => handleChange("videoType", value)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <RadioGroupItem value="upload" id="video-upload" />
+                    <Label htmlFor="video-upload" className="flex items-center gap-2 cursor-pointer">
+                      <Upload className="w-4 h-4" />
+                      Upload Video File
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <RadioGroupItem value="youtube" id="youtube-link" />
+                    <Label htmlFor="youtube-link" className="flex items-center gap-2 cursor-pointer">
+                      <Youtube className="w-4 h-4" />
+                      YouTube Link/Embed Code
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="lesson-type">Content Type</Label>
-              <Select value={formData.type} onValueChange={(value: "video" | "text" | "link") => handleChange("type", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="text">Text/Notes</SelectItem>
-                  <SelectItem value="video">Video</SelectItem>
-                  <SelectItem value="link">External Link</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Dynamic Content Sections */}
+            <div className="space-y-6">
+              {/* Text/Notes Content */}
+              {formData.contentTypes.includes("text") && (
+                <div className="grid gap-2">
+                  <Label htmlFor="text-content">Text/Notes Content</Label>
+                  <Textarea
+                    id="text-content"
+                    value={formData.textContent || ""}
+                    onChange={(e) => handleChange("textContent", e.target.value)}
+                    placeholder="Enter lesson content, notes, or materials"
+                    rows={6}
+                  />
+                </div>
+              )}
 
-            <div className="grid gap-2">
-              <Label htmlFor="lesson-content">
-                {formData.type === "video" && "Video URL or Embed Code"}
-                {formData.type === "text" && "Lesson Content/Notes"}
-                {formData.type === "link" && "External Link URL"}
-              </Label>
-              <Textarea
-                id="lesson-content"
-                value={formData.content}
-                onChange={(e) => handleChange("content", e.target.value)}
-                placeholder={
-                  formData.type === "video" 
-                    ? "Enter video URL or embed code"
-                    : formData.type === "text"
-                    ? "Enter lesson content, notes, or materials"
-                    : "Enter external link URL"
-                }
-                rows={6}
-              />
+              {/* External Links */}
+              {formData.contentTypes.includes("links") && (
+                <div className="grid gap-3">
+                  <Label>External Links</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newExternalLink}
+                      onChange={(e) => setNewExternalLink(e.target.value)}
+                      placeholder="Enter external link URL"
+                      onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addExternalLink())}
+                    />
+                    <Button type="button" onClick={addExternalLink} variant="outline">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {formData.externalLinks && formData.externalLinks.length > 0 && (
+                    <div className="space-y-2">
+                      {formData.externalLinks.map((link, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 border rounded">
+                          <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                          <span className="flex-1 text-sm">{link}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeExternalLink(index)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Video Upload */}
+              {formData.videoType === "upload" && (
+                <div className="grid gap-2">
+                  <Label>Upload Video File</Label>
+                  <VideoUpload
+                    currentVideoUrl={formData.videoUrl}
+                    onUploadComplete={(videoUrl, publicId) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        videoUrl,
+                        videoPublicId: publicId
+                      }))
+                    }}
+                    onUploadError={(error) => {
+                      alert(error)
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* YouTube Link/Embed */}
+              {formData.videoType === "youtube" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="youtube-url">YouTube URL or Embed Code</Label>
+                  <Textarea
+                    id="youtube-url"
+                    value={formData.youtubeUrl || ""}
+                    onChange={(e) => handleChange("youtubeUrl", e.target.value)}
+                    placeholder="Enter YouTube URL or embed code"
+                    rows={4}
+                  />
+                </div>
+              )}
             </div>
           </div>
 

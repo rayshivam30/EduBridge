@@ -8,9 +8,17 @@ const lessonInput = z.object({
   courseId: z.string(),
   title: z.string().min(1),
   description: z.string().optional(),
+  contentTypes: z.array(z.string()).default([]),
+  textContent: z.string().optional(),
+  externalLinks: z.array(z.string()).default([]),
+  videoType: z.enum(["upload", "youtube"]).optional(),
+  videoUrl: z.string().optional(),
+  videoPublicId: z.string().optional(),
+  youtubeUrl: z.string().optional(),
+  order: z.number().int().positive(),
+  // Keep old fields for backward compatibility
   type: z.enum(["video", "text", "link"]).optional(),
   content: z.string().optional(),
-  order: z.number().int().positive(),
 })
 
 export async function POST(req: Request) {
@@ -19,7 +27,22 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { courseId, title, description, type, content, order } = lessonInput.parse(body)
+    const { 
+      courseId, 
+      title, 
+      description, 
+      contentTypes, 
+      textContent, 
+      externalLinks, 
+      videoType,
+      videoUrl,
+      videoPublicId,
+      youtubeUrl, 
+      order,
+      // Backward compatibility
+      type,
+      content
+    } = lessonInput.parse(body)
 
     // Verify the user owns the course
     const course = await prisma.course.findUnique({
@@ -35,13 +58,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Create the lesson with contentURL field (matching schema)
+    // Create the lesson with new structure
     const lesson = await prisma.lesson.create({
       data: { 
         courseId, 
-        title, 
-        contentURL: content || null, // Map content to contentURL
-        order 
+        title,
+        description: description || null,
+        contentTypes,
+        textContent: textContent || null,
+        externalLinks,
+        videoType: videoType || null,
+        videoUrl: videoUrl || null,
+        videoPublicId: videoPublicId || null,
+        youtubeUrl: youtubeUrl || null,
+        order,
+        // Keep contentURL for backward compatibility
+        contentURL: content || textContent || videoUrl || youtubeUrl || null
       },
     })
 

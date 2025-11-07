@@ -22,14 +22,29 @@ import {
   Link,
   GripVertical,
   Users,
-  BookOpen
+  BookOpen,
+  Upload,
+  Youtube,
+  ExternalLink,
+  StickyNote
 } from "lucide-react"
 import { Navigation } from "@/components/navigation"
+import { VideoUpload } from "@/components/video-upload"
+import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface Lesson {
   id: string
   title: string
-  contentURL: string | null
+  description?: string
+  contentURL: string | null // Keep for backward compatibility
+  contentTypes?: string[] // Array to store multiple selected content types
+  videoType?: "upload" | "youtube" // For video content type
+  textContent?: string // For text/notes content
+  externalLinks?: string[] // For external links
+  videoUrl?: string // For uploaded video URL from Cloudinary
+  videoPublicId?: string // Cloudinary public ID for video
+  youtubeUrl?: string // For YouTube URL or embed code
   order: number
 }
 
@@ -151,7 +166,14 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
     const newLesson: Lesson = {
       id: "",
       title: "",
+      description: "",
       contentURL: "",
+      contentTypes: [],
+      textContent: "",
+      externalLinks: [],
+      videoUrl: "",
+      videoPublicId: "",
+      youtubeUrl: "",
       order: (course?.lessons.length || 0) + 1
     }
     setEditingLesson(newLesson)
@@ -160,16 +182,27 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
 
   const saveLesson = async (lesson: Lesson) => {
     try {
+      const lessonData = {
+        title: lesson.title,
+        description: lesson.description,
+        contentTypes: lesson.contentTypes,
+        textContent: lesson.textContent,
+        externalLinks: lesson.externalLinks,
+        videoType: lesson.videoType,
+        videoUrl: lesson.videoUrl,
+        videoPublicId: lesson.videoPublicId,
+        youtubeUrl: lesson.youtubeUrl,
+        order: lesson.order,
+        // Keep old field for backward compatibility
+        content: lesson.textContent || lesson.videoUrl || lesson.youtubeUrl || lesson.contentURL
+      }
+
       if (lesson.id) {
         // Update existing lesson
         const res = await fetch(`/api/lessons/${lesson.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: lesson.title,
-            content: lesson.contentURL,
-            order: lesson.order
-          })
+          body: JSON.stringify(lessonData)
         })
         if (!res.ok) throw new Error("Failed to update lesson")
       } else {
@@ -179,9 +212,7 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             courseId,
-            title: lesson.title,
-            content: lesson.contentURL,
-            order: lesson.order
+            ...lessonData
           })
         })
         if (!res.ok) throw new Error("Failed to create lesson")
@@ -217,7 +248,20 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
   }
 
   const editLesson = (lesson: Lesson) => {
-    setEditingLesson(lesson)
+    // Ensure all new fields are initialized for backward compatibility
+    const normalizedLesson: Lesson = {
+      ...lesson,
+      description: lesson.description || "",
+      contentTypes: lesson.contentTypes || [],
+      textContent: lesson.textContent || "",
+      externalLinks: lesson.externalLinks || [],
+      videoUrl: lesson.videoUrl || "",
+      videoPublicId: lesson.videoPublicId || "",
+      youtubeUrl: lesson.youtubeUrl || "",
+      videoType: lesson.videoType || undefined,
+    }
+    
+    setEditingLesson(normalizedLesson)
     setShowLessonForm(true)
   }
 
@@ -412,9 +456,44 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
                               <span className="text-sm font-medium">{index + 1}</span>
                             </div>
                             <div className="flex-1">
-                              <h4 className="font-medium text-foreground mb-1">{lesson.title || "Untitled Lesson"}</h4>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium text-foreground">{lesson.title || "Untitled Lesson"}</h4>
+                                <div className="flex gap-1">
+                                  {lesson.contentTypes?.includes("text") && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <StickyNote className="w-3 h-3 mr-1" />
+                                      Text
+                                    </Badge>
+                                  )}
+                                  {lesson.contentTypes?.includes("links") && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <ExternalLink className="w-3 h-3 mr-1" />
+                                      Links
+                                    </Badge>
+                                  )}
+                                  {lesson.videoType === "upload" && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <Upload className="w-3 h-3 mr-1" />
+                                      Video
+                                    </Badge>
+                                  )}
+                                  {lesson.videoType === "youtube" && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <Youtube className="w-3 h-3 mr-1" />
+                                      YouTube
+                                    </Badge>
+                                  )}
+                                  {/* Show old content type for backward compatibility */}
+                                  {(!lesson.contentTypes || lesson.contentTypes.length === 0) && !lesson.videoType && lesson.contentURL && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <FileText className="w-3 h-3 mr-1" />
+                                      Legacy
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
                               <p className="text-sm text-muted-foreground">
-                                {lesson.contentURL ? "Has content" : "No content"}
+                                {((lesson.contentTypes && lesson.contentTypes.length > 0) || lesson.videoUrl || lesson.youtubeUrl || lesson.contentURL) ? "Has content" : "No content"}
                               </p>
                             </div>
                           </div>
@@ -507,11 +586,16 @@ interface LessonFormProps {
 
 function LessonForm({ lesson, onSave, onCancel }: LessonFormProps) {
   const [formData, setFormData] = useState<Lesson>(lesson)
+  const [newExternalLink, setNewExternalLink] = useState("")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.title.trim()) {
       alert("Please enter a lesson title")
+      return
+    }
+    if ((!formData.contentTypes || formData.contentTypes.length === 0) && !formData.videoType && !formData.contentURL) {
+      alert("Please select at least one content type or add content")
       return
     }
     onSave(formData)
@@ -521,9 +605,35 @@ function LessonForm({ lesson, onSave, onCancel }: LessonFormProps) {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  const toggleContentType = (type: string) => {
+    setFormData(prev => ({
+      ...prev,
+      contentTypes: (prev.contentTypes || []).includes(type)
+        ? (prev.contentTypes || []).filter(t => t !== type)
+        : [...(prev.contentTypes || []), type]
+    }))
+  }
+
+  const addExternalLink = () => {
+    if (newExternalLink.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        externalLinks: [...(prev.externalLinks || []), newExternalLink.trim()]
+      }))
+      setNewExternalLink("")
+    }
+  }
+
+  const removeExternalLink = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      externalLinks: prev.externalLinks?.filter((_, i) => i !== index) || []
+    }))
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">
@@ -534,26 +644,191 @@ function LessonForm({ lesson, onSave, onCancel }: LessonFormProps) {
             </Button>
           </div>
 
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="lesson-title">Lesson Title *</Label>
-              <Input
-                id="lesson-title"
-                value={formData.title}
-                onChange={(e) => handleChange("title", e.target.value)}
-                placeholder="Enter lesson title"
-              />
+          <div className="grid gap-6">
+            {/* Basic Information */}
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="lesson-title">Lesson Title *</Label>
+                <Input
+                  id="lesson-title"
+                  value={formData.title}
+                  onChange={(e) => handleChange("title", e.target.value)}
+                  placeholder="Enter lesson title"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="lesson-description">Description</Label>
+                <Textarea
+                  id="lesson-description"
+                  value={formData.description || ""}
+                  onChange={(e) => handleChange("description", e.target.value)}
+                  placeholder="Describe what this lesson covers"
+                  rows={3}
+                />
+              </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="lesson-content">Content (URL, Notes, or Materials)</Label>
-              <Textarea
-                id="lesson-content"
-                value={formData.contentURL || ""}
-                onChange={(e) => handleChange("contentURL", e.target.value)}
-                placeholder="Enter lesson content, video URL, or materials"
-                rows={6}
-              />
+            {/* Content Type Selection - First Dropdown */}
+            <div className="grid gap-4">
+              <div className="grid gap-3">
+                <Label>Content Types (Select multiple)</Label>
+                <div className="grid gap-3">
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="text-notes"
+                      checked={(formData.contentTypes || []).includes("text")}
+                      onCheckedChange={() => toggleContentType("text")}
+                    />
+                    <Label htmlFor="text-notes" className="flex items-center gap-2 cursor-pointer">
+                      <StickyNote className="w-4 h-4" />
+                      Text/Notes
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id="external-links"
+                      checked={(formData.contentTypes || []).includes("links")}
+                      onCheckedChange={() => toggleContentType("links")}
+                    />
+                    <Label htmlFor="external-links" className="flex items-center gap-2 cursor-pointer">
+                      <ExternalLink className="w-4 h-4" />
+                      External Links
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Video Content - Second Dropdown */}
+              <div className="grid gap-3">
+                <Label>Video Content (Optional)</Label>
+                <RadioGroup
+                  value={formData.videoType || ""}
+                  onValueChange={(value: "upload" | "youtube") => handleChange("videoType", value)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <RadioGroupItem value="upload" id="video-upload" />
+                    <Label htmlFor="video-upload" className="flex items-center gap-2 cursor-pointer">
+                      <Upload className="w-4 h-4" />
+                      Upload Video File
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <RadioGroupItem value="youtube" id="youtube-link" />
+                    <Label htmlFor="youtube-link" className="flex items-center gap-2 cursor-pointer">
+                      <Youtube className="w-4 h-4" />
+                      YouTube Link/Embed Code
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+
+            {/* Dynamic Content Sections */}
+            <div className="space-y-6">
+              {/* Text/Notes Content */}
+              {(formData.contentTypes || []).includes("text") && (
+                <div className="grid gap-2">
+                  <Label htmlFor="text-content">Text/Notes Content</Label>
+                  <Textarea
+                    id="text-content"
+                    value={formData.textContent || ""}
+                    onChange={(e) => handleChange("textContent", e.target.value)}
+                    placeholder="Enter lesson content, notes, or materials"
+                    rows={6}
+                  />
+                </div>
+              )}
+
+              {/* External Links */}
+              {(formData.contentTypes || []).includes("links") && (
+                <div className="grid gap-3">
+                  <Label>External Links</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newExternalLink}
+                      onChange={(e) => setNewExternalLink(e.target.value)}
+                      placeholder="Enter external link URL"
+                      onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addExternalLink())}
+                    />
+                    <Button type="button" onClick={addExternalLink} variant="outline">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {formData.externalLinks && formData.externalLinks.length > 0 && (
+                    <div className="space-y-2">
+                      {formData.externalLinks.map((link, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 border rounded">
+                          <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                          <span className="flex-1 text-sm">{link}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeExternalLink(index)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Video Upload */}
+              {formData.videoType === "upload" && (
+                <div className="grid gap-2">
+                  <Label>Upload Video File</Label>
+                  <VideoUpload
+                    currentVideoUrl={formData.videoUrl}
+                    onUploadComplete={(videoUrl, publicId) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        videoUrl,
+                        videoPublicId: publicId
+                      }))
+                    }}
+                    onUploadError={(error) => {
+                      alert(error)
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* YouTube Link/Embed */}
+              {formData.videoType === "youtube" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="youtube-url">YouTube URL or Embed Code</Label>
+                  <Textarea
+                    id="youtube-url"
+                    value={formData.youtubeUrl || ""}
+                    onChange={(e) => handleChange("youtubeUrl", e.target.value)}
+                    placeholder="Enter YouTube URL or embed code"
+                    rows={4}
+                  />
+                </div>
+              )}
+
+              {/* Legacy Content (for backward compatibility) */}
+              {(!formData.contentTypes || formData.contentTypes.length === 0) && !formData.videoType && (
+                <div className="grid gap-2">
+                  <Label htmlFor="legacy-content">Legacy Content</Label>
+                  <Textarea
+                    id="legacy-content"
+                    value={formData.contentURL || ""}
+                    onChange={(e) => handleChange("contentURL", e.target.value)}
+                    placeholder="Enter lesson content, video URL, or materials"
+                    rows={6}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This is the old content format. Consider using the new content types above for better organization.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

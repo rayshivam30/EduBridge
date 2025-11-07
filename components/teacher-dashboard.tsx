@@ -23,10 +23,38 @@ interface TeacherDashboardProps {
   onNavigate?: (page: string) => void
 }
 
+interface AnalyticsData {
+  engagementData: Array<{
+    day: string
+    active: number
+    completed: number
+  }>
+  assessmentData: Array<{
+    name: string
+    score: number
+  }>
+  activities: Array<{
+    student: string
+    action: string
+    time: string
+    type: string
+  }>
+  summary?: {
+    totalStudents: number
+    totalCourses: number
+    activeCourses: number
+    totalLessons: number
+    totalForumPosts: number
+  }
+}
+
 export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
 
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<any[] | null>(null)
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -43,6 +71,25 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
       alert("An error occurred while loading courses.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadAnalytics = async () => {
+    setAnalyticsLoading(true)
+    setAnalyticsError(null)
+    try {
+      const res = await fetch("/api/dashboard/teacher-analytics", { cache: "no-store" })
+      if (res.ok) {
+        setAnalyticsData(await res.json())
+      } else {
+        setAnalyticsError("Failed to load analytics data")
+        console.error("Failed to load analytics:", res.status)
+      }
+    } catch (error) {
+      setAnalyticsError("An error occurred while loading analytics")
+      console.error("Error loading analytics:", error)
+    } finally {
+      setAnalyticsLoading(false)
     }
   }
 
@@ -94,6 +141,7 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
 
   useEffect(() => {
     load()
+    loadAnalytics()
   }, [])
 
   const list = useMemo(
@@ -212,7 +260,7 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                       <p className="text-sm text-muted-foreground">{course.students} students enrolled</p>
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={() => (typeof (course as any).id === "string" ? (window.location.href = `/course-player/${(course as any).id}`) : onNavigate?.("course-player"))} variant="ghost" size="sm" className="gap-2">
+                      <Button onClick={() => (typeof (course as any).id === "string" ? (window.location.href = `/teacher-course-preview/${(course as any).id}`) : onNavigate?.("course-player"))} variant="ghost" size="sm" className="gap-2">
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button onClick={() => typeof (course as any).id === "string" ? (window.location.href = `/manage-course/${(course as any).id}`) : editCourse((course as any).id)} variant="ghost" size="sm" className="gap-2">
@@ -290,56 +338,167 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
         </div>
 
         {/* Analytics Section */}
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-foreground">Analytics Overview</h2>
+          <Button 
+            onClick={loadAnalytics} 
+            disabled={analyticsLoading}
+            variant="outline" 
+            size="sm"
+            className="gap-2"
+          >
+            <TrendingUp className="w-4 h-4" />
+            {analyticsLoading ? "Refreshing..." : "Refresh Data"}
+          </Button>
+        </div>
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
           {/* Student Engagement */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4">Student Engagement</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={engagementData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="day" stroke="var(--muted-foreground)" />
-                <YAxis stroke="var(--muted-foreground)" />
-                <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }} />
-                <Line type="monotone" dataKey="active" stroke="var(--primary)" strokeWidth={2} />
-                <Line type="monotone" dataKey="completed" stroke="var(--secondary)" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            {analyticsLoading ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <div className="text-muted-foreground">Loading engagement data...</div>
+              </div>
+            ) : analyticsError ? (
+              <div className="flex items-center justify-center h-[300px] text-center">
+                <div>
+                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">{analyticsError}</p>
+                  <Button onClick={loadAnalytics} variant="outline" size="sm" className="mt-4">
+                    Try Again
+                  </Button>
+                </div>
+              </div>
+            ) : analyticsData?.engagementData ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={analyticsData.engagementData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="day" stroke="var(--muted-foreground)" />
+                  <YAxis stroke="var(--muted-foreground)" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+                    labelFormatter={(label) => `${label}`}
+                    formatter={(value, name) => [
+                      value,
+                      name === 'active' ? 'Active Students' : 'Completed Lessons'
+                    ]}
+                  />
+                  <Line type="monotone" dataKey="active" stroke="var(--primary)" strokeWidth={2} name="Active Students" />
+                  <Line type="monotone" dataKey="completed" stroke="var(--secondary)" strokeWidth={2} name="Completed Lessons" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-center">
+                <div>
+                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No engagement data available</p>
+                  <p className="text-sm text-muted-foreground">Data will appear when students start engaging with your courses</p>
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Assessment Performance */}
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Assessment Performance</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={assessmentData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="name" stroke="var(--muted-foreground)" />
-                <YAxis stroke="var(--muted-foreground)" />
-                <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }} />
-                <Bar dataKey="score" fill="var(--accent)" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Course Progress Overview</h3>
+            {analyticsLoading ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <div className="text-muted-foreground">Loading progress data...</div>
+              </div>
+            ) : analyticsError ? (
+              <div className="flex items-center justify-center h-[300px] text-center">
+                <div>
+                  <Award className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">{analyticsError}</p>
+                  <Button onClick={loadAnalytics} variant="outline" size="sm" className="mt-4">
+                    Try Again
+                  </Button>
+                </div>
+              </div>
+            ) : analyticsData?.assessmentData && analyticsData.assessmentData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analyticsData.assessmentData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="name" stroke="var(--muted-foreground)" />
+                  <YAxis stroke="var(--muted-foreground)" domain={[0, 100]} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
+                    formatter={(value) => [`${value}%`, 'Average Progress']}
+                  />
+                  <Bar dataKey="score" fill="var(--accent)" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-center">
+                <div>
+                  <Award className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No progress data available</p>
+                  <p className="text-sm text-muted-foreground">Data will appear when students make progress in your courses</p>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
 
         {/* Recent Activity */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-foreground mb-6">Recent Student Activity</h3>
-          <div className="space-y-4">
-            {activities.map((activity, idx) => (
-              <div key={idx} className="flex items-center gap-4 pb-4 border-b border-border last:border-b-0 last:pb-0">
-                <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${activity.color}`}
-                >
-                  <activity.icon className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground text-sm">{activity.student}</p>
-                  <p className="text-sm text-muted-foreground">{activity.action}</p>
-                </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.time}</span>
-              </div>
-            ))}
-          </div>
+          {analyticsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">Loading recent activities...</div>
+            </div>
+          ) : analyticsError ? (
+            <div className="text-center py-12">
+              <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">{analyticsError}</p>
+              <Button onClick={loadAnalytics} variant="outline" size="sm">
+                Try Again
+              </Button>
+            </div>
+          ) : analyticsData?.activities && analyticsData.activities.length > 0 ? (
+            <div className="space-y-4">
+              {analyticsData.activities.map((activity, idx) => {
+                const getActivityIcon = (type: string) => {
+                  switch (type) {
+                    case 'completion': return Award
+                    case 'progress': return Clock
+                    case 'forum': return MessageSquare
+                    default: return BookOpen
+                  }
+                }
+                
+                const getActivityColor = (type: string) => {
+                  switch (type) {
+                    case 'completion': return "bg-secondary/10 text-secondary"
+                    case 'progress': return "bg-primary/10 text-primary"
+                    case 'forum': return "bg-accent/10 text-accent"
+                    default: return "bg-primary/10 text-primary"
+                  }
+                }
+                
+                const ActivityIcon = getActivityIcon(activity.type)
+                
+                return (
+                  <div key={idx} className="flex items-center gap-4 pb-4 border-b border-border last:border-b-0 last:pb-0">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>
+                      <ActivityIcon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground text-sm">{activity.student}</p>
+                      <p className="text-sm text-muted-foreground">{activity.action}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.time}</span>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-foreground">No recent activity</h3>
+              <p className="text-muted-foreground mb-6">Student activities will appear here when they engage with your courses</p>
+            </div>
+          )}
         </Card>
       </div>
     </div>
@@ -348,51 +507,4 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
 
 
 
-const engagementData = [
-  { day: "Mon", active: 156, completed: 42 },
-  { day: "Tue", active: 178, completed: 55 },
-  { day: "Wed", active: 142, completed: 38 },
-  { day: "Thu", active: 189, completed: 62 },
-  { day: "Fri", active: 201, completed: 71 },
-  { day: "Sat", active: 98, completed: 28 },
-  { day: "Sun", active: 76, completed: 15 },
-]
 
-const assessmentData = [
-  { name: "Quiz 1", score: 82 },
-  { name: "Quiz 2", score: 78 },
-  { name: "Assignment 1", score: 85 },
-  { name: "Midterm", score: 79 },
-  { name: "Final Project", score: 88 },
-]
-
-const activities = [
-  {
-    student: "Alex Johnson",
-    action: "Completed Web Development Module 3",
-    time: "2 hours ago",
-    icon: Award,
-    color: "bg-secondary/10 text-secondary",
-  },
-  {
-    student: "Sarah Chen",
-    action: "Asked question on Discussion Forum",
-    time: "4 hours ago",
-    icon: MessageSquare,
-    color: "bg-primary/10 text-primary",
-  },
-  {
-    student: "Mike Davis",
-    action: "Submitted Assignment 2",
-    time: "6 hours ago",
-    icon: BookOpen,
-    color: "bg-accent/10 text-accent",
-  },
-  {
-    student: "Emma Wilson",
-    action: "Completed Practice Problems (8/10)",
-    time: "1 day ago",
-    icon: Clock,
-    color: "bg-primary/10 text-primary",
-  },
-]

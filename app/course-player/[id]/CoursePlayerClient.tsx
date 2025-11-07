@@ -174,6 +174,18 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
       )
     }
 
+    // Check if it's iframe embed code
+    if (lesson.contentURL.includes('<iframe') && lesson.contentURL.includes('</iframe>')) {
+      return (
+        <div className="aspect-video bg-black rounded-lg overflow-hidden">
+          <div 
+            dangerouslySetInnerHTML={{ __html: lesson.contentURL }}
+            className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
+          />
+        </div>
+      )
+    }
+
     // Check if it's a video URL
     if (lesson.contentURL.includes('youtube.com') || lesson.contentURL.includes('youtu.be') || lesson.contentURL.includes('vimeo.com')) {
       return (

@@ -99,11 +99,20 @@ model Course {
 }
 
 model Lesson {
-  id         String  @id @default(cuid())
-  courseId   String
-  title      String
-  contentURL String?
-  order      Int
+  id            String   @id @default(cuid())
+  courseId      String
+  title         String
+  description   String?
+  contentURL    String?  // Keep for backward compatibility
+  contentTypes  String[] // Array of content types: ["text", "links", "video"]
+  textContent   String?  // For text/notes content
+  externalLinks String[] // Array of external links
+  videoType     String?  // "upload" or "youtube"
+  videoUrl      String?  // Cloudinary video URL
+  videoPublicId String?  // Cloudinary public ID
+  youtubeUrl    String?  // For YouTube URL or embed code
+  videoFileName String?  // For uploaded video file name (deprecated)
+  order         Int
 
   course   Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   progress Progress[]

@@ -7,9 +7,17 @@ import { redis } from "@/lib/redis"
 const lessonUpdateInput = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
+  contentTypes: z.array(z.string()).optional(),
+  textContent: z.string().optional(),
+  externalLinks: z.array(z.string()).optional(),
+  videoType: z.enum(["upload", "youtube"]).optional(),
+  videoUrl: z.string().optional(),
+  videoPublicId: z.string().optional(),
+  youtubeUrl: z.string().optional(),
+  order: z.number().int().positive().optional(),
+  // Keep old fields for backward compatibility
   type: z.enum(["video", "text", "link"]).optional(),
   content: z.string().optional(),
-  order: z.number().int().positive().optional(),
 })
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -78,14 +86,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const body = await req.json()
     const updateData = lessonUpdateInput.parse(body)
     
-    // Map content to contentURL if provided
-    const prismaUpdateData: any = { ...updateData }
+    // Prepare data for Prisma update
+    const prismaUpdateData: any = {}
+    
+    // Handle new fields
+    if (updateData.title !== undefined) prismaUpdateData.title = updateData.title
+    if (updateData.description !== undefined) prismaUpdateData.description = updateData.description
+    if (updateData.contentTypes !== undefined) prismaUpdateData.contentTypes = updateData.contentTypes
+    if (updateData.textContent !== undefined) prismaUpdateData.textContent = updateData.textContent
+    if (updateData.externalLinks !== undefined) prismaUpdateData.externalLinks = updateData.externalLinks
+    if (updateData.videoType !== undefined) prismaUpdateData.videoType = updateData.videoType
+    if (updateData.videoUrl !== undefined) prismaUpdateData.videoUrl = updateData.videoUrl
+    if (updateData.videoPublicId !== undefined) prismaUpdateData.videoPublicId = updateData.videoPublicId
+    if (updateData.youtubeUrl !== undefined) prismaUpdateData.youtubeUrl = updateData.youtubeUrl
+    if (updateData.order !== undefined) prismaUpdateData.order = updateData.order
+    
+    // Handle backward compatibility
     if (updateData.content !== undefined) {
       prismaUpdateData.contentURL = updateData.content
-      delete prismaUpdateData.content
     }
-    delete prismaUpdateData.type // Remove type as it's not in schema
-    delete prismaUpdateData.description // Remove description as it's not in schema
+    
+    // Set contentURL for backward compatibility if new content exists
+    if (!prismaUpdateData.contentURL && (updateData.textContent || updateData.videoUrl || updateData.youtubeUrl)) {
+      prismaUpdateData.contentURL = updateData.textContent || updateData.videoUrl || updateData.youtubeUrl
+    }
 
     const lesson = await prisma.lesson.update({
       where: { id },
