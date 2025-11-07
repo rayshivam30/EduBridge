@@ -1,7 +1,6 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Navigation } from "@/components/navigation"
 import { TeacherDashboard } from "@/components/teacher-dashboard"
 
 function pageToPath(page: string): string {
@@ -25,16 +24,9 @@ function pageToPath(page: string): string {
   }
 }
 
-export function TeacherDashboardClient() {
+export function TeacherPageClient() {
   const router = useRouter()
   const onNavigate = (page: string) => router.push(pageToPath(page))
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation currentPage="teacher-dashboard" onNavigate={onNavigate} />
-      <TeacherDashboard onNavigate={onNavigate} />
-    </div>
-  )
+  return <TeacherDashboard onNavigate={onNavigate} />
 }
-
-

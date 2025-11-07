@@ -14,18 +14,25 @@ const courseInput = z.object({
 })
 
 export async function GET() {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
   try {
-    const cached = await redis.get(COURSE_LIST_KEY)
+    // Create a user-specific cache key
+    const userCacheKey = `${COURSE_LIST_KEY}:${session.user.id}`
+    const cached = await redis.get(userCacheKey)
     if (cached) return NextResponse.json(cached)
 
+    // Only fetch courses created by the authenticated user
     const data = await prisma.course.findMany({
+      where: { createdById: session.user.id },
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { lessons: true, enrollments: true } },
         createdBy: { select: { id: true, name: true, image: true } },
       },
     })
-    await redis.set(COURSE_LIST_KEY, data, { ex: 60 })
+    await redis.set(userCacheKey, data, { ex: 60 })
     return NextResponse.json(data)
   } catch (e) {
     return NextResponse.json({ error: "Failed to fetch courses" }, { status: 500 })
@@ -40,11 +47,26 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { title, description, price, status } = courseInput.parse(body)
     const course = await prisma.course.create({
-      data: { title, description, price, status, createdById: session.user.id },
+      data: { 
+        title, 
+        description, 
+        price: price, // Prisma will handle the Decimal conversion
+        status, 
+        createdById: session.user.id 
+      },
     })
-    await redis.del(COURSE_LIST_KEY)
+    // Clear user-specific cache and public cache if published
+    const userCacheKey = `${COURSE_LIST_KEY}:${session.user.id}`
+    await redis.del(userCacheKey)
+    if (status === "published") {
+      await redis.del("courses:public:v1")
+    }
     return NextResponse.json(course, { status: 201 })
   } catch (e) {
+    console.error("Course creation error:", e)
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: "Validation failed", details: e.errors }, { status: 400 })
+    }
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
   }
 }

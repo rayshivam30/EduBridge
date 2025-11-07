@@ -17,58 +17,178 @@ import {
   Cell,
 } from "recharts"
 import { BookOpen, Clock, Award, Users, TrendingUp, Play, MessageCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface StudentDashboardProps {
   onNavigate?: (page: string) => void
 }
 
 export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
-  const [selectedCourse, setSelectedCourse] = useState(null)
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [enrollments, setEnrollments] = useState<any[] | null>(null)
+  const [publicCourses, setPublicCourses] = useState<any[] | null>(null)
+  const [dashboardStats, setDashboardStats] = useState<any | null>(null)
 
   useEffect(() => {
-    const run = async () => {
+    const loadData = async () => {
       setLoading(true)
       try {
-        const res = await fetch("/api/enrollments", { cache: "no-store" })
-        if (res.ok) {
-          const data = await res.json()
-          setEnrollments(Array.isArray(data) ? data : [])
+        // Load enrollments
+        const enrollmentsRes = await fetch("/api/enrollments", { cache: "no-store" })
+        if (enrollmentsRes.ok) {
+          const enrollmentsData = await enrollmentsRes.json()
+          setEnrollments(Array.isArray(enrollmentsData) ? enrollmentsData : [])
         }
-      } catch (_) {
-        // ignore, keep mock
+
+        // Load dashboard stats
+        const statsRes = await fetch("/api/dashboard/stats", { cache: "no-store" })
+        if (statsRes.ok) {
+          const statsData = await statsRes.json()
+          setDashboardStats(statsData)
+        }
+
+        // Load public courses for recommendations
+        const coursesRes = await fetch("/api/courses/public", { cache: "no-store" })
+        if (coursesRes.ok) {
+          const coursesData = await coursesRes.json()
+          setPublicCourses(Array.isArray(coursesData) ? coursesData : [])
+        }
+      } catch (error) {
+        console.error("Error loading dashboard data:", error)
       } finally {
         setLoading(false)
       }
     }
-    run()
+    loadData()
   }, [])
 
-  const currentCourses = useMemo(
-    () =>
-      (enrollments ?? []).map((e) => ({
+  const currentCourses = useMemo(() => {
+    if (!dashboardStats?.courseProgresses) {
+      return (enrollments ?? []).map((e) => ({
         title: e.course?.title ?? "Course",
         instructor: `by ${e.course?.createdBy?.name ?? "Instructor"}`,
         level: e.course?.price && Number(e.course.price) > 0 ? "Paid" : "Free",
-        progress: e.progress ?? 0,
+        progress: 0,
         id: e.courseId as string,
-      })),
-    [enrollments]
-  )
+      }))
+    }
+
+    return dashboardStats.courseProgresses.map((cp: any) => {
+      const enrollment = enrollments?.find(e => e.courseId === cp.courseId)
+      return {
+        title: cp.title,
+        instructor: `by ${enrollment?.course?.createdBy?.name ?? "Instructor"}`,
+        level: enrollment?.course?.price && Number(enrollment.course.price) > 0 ? "Paid" : "Free",
+        progress: cp.progress,
+        id: cp.courseId,
+      }
+    })
+  }, [enrollments, dashboardStats])
+
+  const dynamicStats = useMemo(() => {
+    const stats = dashboardStats || {
+      activeCourses: 0,
+      completedCourses: 0,
+      avgProgress: 0,
+      totalLessonsCompleted: 0
+    }
+
+    return [
+      {
+        label: "Active Courses",
+        value: stats.activeCourses.toString(),
+        icon: BookOpen,
+        color: "bg-primary/10 text-primary"
+      },
+      {
+        label: "Completed",
+        value: stats.completedCourses.toString(),
+        icon: Award,
+        color: "bg-secondary/10 text-secondary"
+      },
+      {
+        label: "Avg Progress",
+        value: `${stats.avgProgress}%`,
+        icon: TrendingUp,
+        color: "bg-accent/10 text-accent"
+      },
+      {
+        label: "Lessons Done",
+        value: stats.totalLessonsCompleted.toString(),
+        icon: Clock,
+        color: "bg-primary/10 text-primary"
+      },
+    ]
+  }, [dashboardStats])
+
+  const dynamicProgressData = useMemo(() => {
+    if (!dashboardStats || dashboardStats.activeCourses === 0) {
+      return [{ name: "No courses", value: 100, color: "var(--muted)" }]
+    }
+
+    const completed = dashboardStats.completedCourses
+    const total = dashboardStats.activeCourses
+    const inProgress = total - completed
+
+    return [
+      { name: "Completed", value: completed, color: "var(--primary)" },
+      { name: "In Progress", value: inProgress, color: "var(--secondary)" },
+    ].filter(item => item.value > 0)
+  }, [dashboardStats])
+
+  const recommendations = useMemo(() => {
+    if (!publicCourses) return []
+
+    // Get courses the student is not enrolled in
+    const enrolledCourseIds = new Set(currentCourses.map((c: any) => c.id))
+    const availableCourses = publicCourses.filter(course => !enrolledCourseIds.has(course.id))
+
+    // Sort by enrollment count and take top 4
+    return availableCourses
+      .sort((a, b) => (b._count?.enrollments || 0) - (a._count?.enrollments || 0))
+      .slice(0, 4)
+      .map(course => ({
+        id: course.id,
+        title: course.title,
+        category: course.category || "General",
+        popularity: Math.min(100, (course._count?.enrollments || 0) * 10), // Convert to percentage
+        students: Math.floor((course._count?.enrollments || 0) / 1000) || 1, // Convert to k format
+      }))
+  }, [publicCourses, currentCourses])
+
+  // Mock learning time data - TODO: Replace with actual tracking
+  const learningTimeData = [
+    { day: "Mon", hours: 0 },
+    { day: "Tue", hours: 0 },
+    { day: "Wed", hours: 0 },
+    { day: "Thu", hours: 0 },
+    { day: "Fri", hours: 0 },
+    { day: "Sat", hours: 0 },
+    { day: "Sun", hours: 0 },
+  ]
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back!</h1>
-          <p className="text-muted-foreground">Here{'\''}s your learning progress this week</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back!</h1>
+            <p className="text-muted-foreground">Here{'\''}s your learning progress this week</p>
+          </div>
+          <Button
+            onClick={() => router.push("/courses")}
+            className="gap-2"
+          >
+            <BookOpen className="w-4 h-4" />
+            Browse Courses
+          </Button>
         </div>
 
         {/* Stats Grid */}
         <div className="grid md:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat, idx) => (
+          {dynamicStats.map((stat, idx) => (
             <Card key={idx} className="p-6">
               <div className="flex items-start justify-between">
                 <div>
@@ -106,7 +226,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={progressData}
+                  data={dynamicProgressData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -114,7 +234,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {progressData.map((entry, index) => (
+                  {dynamicProgressData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -139,38 +259,38 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                   <p className="text-muted-foreground">Loading your courses...</p>
                 </div>
               ) : currentCourses.length > 0 ? (
-                currentCourses.map((course, idx) => (
-                <div
-                  key={idx}
-                  className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                  onClick={() => {
-                    const cid = (course as any).id as string | undefined
-                    if (cid) window.location.href = `/course-player/${cid}`
-                    else onNavigate?.("course-player")
-                  }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="font-semibold text-foreground">{course.title}</h4>
-                      <p className="text-sm text-muted-foreground">{course.instructor}</p>
+                currentCourses.map((course: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      const cid = (course as any).id as string | undefined
+                      if (cid) window.location.href = `/course-player/${cid}`
+                      else onNavigate?.("course-player")
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="font-semibold text-foreground">{course.title}</h4>
+                        <p className="text-sm text-muted-foreground">{course.instructor}</p>
+                      </div>
+                      <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                        {course.level}
+                      </span>
                     </div>
-                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded">
-                      {course.level}
-                    </span>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="text-foreground font-medium">{course.progress}%</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-primary rounded-full h-2 transition-all"
+                          style={{ width: `${course.progress}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="text-foreground font-medium">{course.progress}%</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary rounded-full h-2 transition-all"
-                        style={{ width: `${course.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
                 ))
               ) : (
                 <div className="text-center py-8 border border-dashed rounded-lg">
@@ -180,7 +300,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                     Get started by enrolling in a course from the catalog.
                   </p>
                   <div className="mt-6">
-                    <Button onClick={() => onNavigate?.("courses")}>
+                    <Button onClick={() => router.push("/courses")}>
                       Browse Courses
                     </Button>
                   </div>
@@ -195,6 +315,16 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
             <div className="space-y-3">
               <Button
                 className="w-full justify-start gap-3 h-auto py-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={() => router.push("/courses")}
+              >
+                <BookOpen className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Browse Courses</div>
+                  <div className="text-xs opacity-90">Discover new courses to learn</div>
+                </div>
+              </Button>
+              <Button
+                className="w-full justify-start gap-3 h-auto py-3 bg-secondary text-secondary-foreground hover:bg-secondary/90"
                 onClick={() => onNavigate?.("course-player")}
               >
                 <Play className="w-5 h-5" />
@@ -204,7 +334,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 </div>
               </Button>
               <Button
-                className="w-full justify-start gap-3 h-auto py-3 bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                className="w-full justify-start gap-3 h-auto py-3 bg-accent text-accent-foreground hover:bg-accent/90"
                 onClick={() => onNavigate?.("ai-tutor")}
               >
                 <MessageCircle className="w-5 h-5" />
@@ -214,7 +344,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 </div>
               </Button>
               <Button
-                className="w-full justify-start gap-3 h-auto py-3 bg-accent text-accent-foreground hover:bg-accent/90"
+                className="w-full justify-start gap-3 h-auto py-3 bg-muted text-muted-foreground hover:bg-muted/90"
                 onClick={() => onNavigate?.("community-forum")}
               >
                 <Users className="w-5 h-5" />
@@ -229,83 +359,67 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
 
         {/* Recommendations */}
         <Card className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-6">Recommended For You</h3>
-          <div className="grid md:grid-cols-4 gap-4">
-            {recommendations.map((rec, idx) => (
-              <div
-                key={idx}
-                className="border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-              >
-                <div className="h-32 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
-                  <BookOpen className="w-12 h-12 text-primary/50" />
-                </div>
-                <div className="p-4">
-                  <h4 className="font-semibold text-foreground text-sm mb-1">{rec.title}</h4>
-                  <p className="text-xs text-muted-foreground mb-3">{rec.category}</p>
-                  <div className="flex items-center gap-1">
-                    <div className="flex-1 h-1 bg-muted rounded-full">
-                      <div className="h-1 bg-accent rounded-full" style={{ width: `${rec.popularity}%` }} />
-                    </div>
-                    <span className="text-xs text-muted-foreground">{rec.students}k</span>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-foreground">Recommended For You</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/courses")}
+            >
+              View All Courses
+            </Button>
+          </div>
+          {loading ? (
+            <div className="grid md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="border border-border rounded-lg overflow-hidden animate-pulse">
+                  <div className="h-32 bg-muted"></div>
+                  <div className="p-4 space-y-2">
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                    <div className="h-3 bg-muted rounded w-1/2"></div>
+                    <div className="h-2 bg-muted rounded"></div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : recommendations.length > 0 ? (
+            <div className="grid md:grid-cols-4 gap-4">
+              {recommendations.map((rec, idx) => (
+                <div
+                  key={rec.id || idx}
+                  className="border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => router.push(`/courses/${rec.id}`)}
+                >
+                  <div className="h-32 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
+                    <BookOpen className="w-12 h-12 text-primary/50" />
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-semibold text-foreground text-sm mb-1 line-clamp-2">{rec.title}</h4>
+                    <p className="text-xs text-muted-foreground mb-3">{rec.category}</p>
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 h-1 bg-muted rounded-full">
+                        <div className="h-1 bg-accent rounded-full" style={{ width: `${Math.min(rec.popularity, 100)}%` }} />
+                      </div>
+                      <span className="text-xs text-muted-foreground">{rec.students}k</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 border border-dashed rounded-lg">
+              <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-foreground">No recommendations available</h3>
+              <p className="text-muted-foreground mb-6">Browse our course catalog to discover new learning opportunities</p>
+              <Button onClick={() => router.push("/courses")}>
+                Browse All Courses
+              </Button>
+            </div>
+          )}
         </Card>
       </div>
     </div>
   )
 }
 
-const stats = [
-  { label: "Hours Learning", value: "12.5", icon: Clock, color: "bg-primary/10 text-primary" },
-  { label: "Courses Active", value: "4", icon: BookOpen, color: "bg-secondary/10 text-secondary" },
-  { label: "Certificates", value: "3", icon: Award, color: "bg-accent/10 text-accent" },
-  { label: "Study Streak", value: "15 days", icon: TrendingUp, color: "bg-primary/10 text-primary" },
-]
 
-const learningTimeData = [
-  { day: "Mon", hours: 2.5 },
-  { day: "Tue", hours: 3 },
-  { day: "Wed", hours: 2 },
-  { day: "Thu", hours: 3.5 },
-  { day: "Fri", hours: 4 },
-  { day: "Sat", hours: 2 },
-  { day: "Sun", hours: 1.5 },
-]
-
-const progressData = [
-  { name: "Completed", value: 35, color: "var(--primary)" },
-  { name: "In Progress", value: 45, color: "var(--secondary)" },
-  { name: "Not Started", value: 20, color: "var(--muted)" },
-]
-
-// Removed mock courses to only show enrolled courses
-
-const recommendations = [
-  {
-    title: "Advanced JavaScript",
-    category: "Programming",
-    popularity: 92,
-    students: 15,
-  },
-  {
-    title: "Machine Learning 101",
-    category: "AI/ML",
-    popularity: 88,
-    students: 22,
-  },
-  {
-    title: "UI/UX Design Sprint",
-    category: "Design",
-    popularity: 85,
-    students: 18,
-  },
-  {
-    title: "Business Analytics",
-    category: "Business",
-    popularity: 80,
-    students: 12,
-  },
-]

@@ -1,50 +1,30 @@
 import { getCourseById } from "@/app/actions/courses"
 import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
-import CourseProgress from "@/components/course-progress"
+import { CoursePlayerClient } from "./CoursePlayerClient"
 
-interface Lesson {
-  id: string;
-  title: string;
-  description: string | null;
-  videoUrl: string | null;
-  order: number;
-  duration: number | null;
-  isPreview: boolean;
-}
-
-interface Course {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  status: 'draft' | 'published' | 'archived';
-  createdAt: Date;
-  updatedAt: Date;
-  createdById: string;
-  lessons: Lesson[];
-  _count: {
-    enrollments: number;
-  };
-}
-
-export default async function Page({ params }: { params: { id: string } }) {
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await auth()
-  if (!session?.user?.id) redirect("/api/auth/signin")
+  if (!session?.user?.id) redirect("/login")
 
-  const course = await getCourseById(params.id) as Course | null
+  const course = await getCourseById(id)
   if (!course) return notFound()
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground">{course.title}</h1>
-          <p className="text-muted-foreground mt-2">{course.description}</p>
-        </div>
+  // Check if user is enrolled in the course
+  const enrollment = await prisma.enrollment.findUnique({
+    where: {
+      userId_courseId: {
+        userId: session.user.id,
+        courseId: id
+      }
+    }
+  })
 
-        <CourseProgress courseId={params.id} lessons={course.lessons} />
-      </div>
-    </div>
-  )
+  if (!enrollment) {
+    redirect(`/courses/${id}`) // Redirect to course details page if not enrolled
+  }
+
+  return <CoursePlayerClient course={course} />
 }

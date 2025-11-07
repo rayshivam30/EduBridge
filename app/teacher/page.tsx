@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
-import { TeacherDashboard } from "@/components/teacher-dashboard"
+import { TeacherPageClient } from "./TeacherPageClient"
 
 export default async function TeacherPage() {
   const session = await auth()
@@ -8,5 +8,5 @@ export default async function TeacherPage() {
   const role = (session.user as any).role
   if (role === "STUDENT") redirect("/student")
   if (role !== "TEACHER") redirect("/onboarding")
-  return <TeacherDashboard />
+  return <TeacherPageClient />
 }
