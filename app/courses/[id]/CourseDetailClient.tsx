@@ -147,7 +147,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
             <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-foreground">Course not found</h3>
             <p className="text-muted-foreground mt-2 mb-6">
-              The course you're looking for doesn't exist or has been removed.
+              The course you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
             <Button onClick={() => router.push("/courses")}>
               Back to Courses
@@ -252,7 +252,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
             {/* What You'll Learn */}
             <Card className="p-6 mb-8">
-              <h3 className="text-xl font-semibold text-foreground mb-4">What you'll learn</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-4">What you&apos;ll learn</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 {learningObjectives.map((objective, idx) => (
                   <div key={idx} className="flex items-start gap-3">

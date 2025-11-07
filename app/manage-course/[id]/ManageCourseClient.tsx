@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -69,13 +69,7 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
     loadParams()
   }, [params])
 
-  useEffect(() => {
-    if (courseId) {
-      loadCourse()
-    }
-  }, [courseId])
-
-  const loadCourse = async () => {
+  const loadCourse = useCallback(async () => {
     try {
       const res = await fetch(`/api/courses/${courseId}`)
       if (res.ok) {
@@ -94,7 +88,13 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
     } finally {
       setLoading(false)
     }
-  }
+  }, [courseId, router])
+
+  useEffect(() => {
+    if (courseId) {
+      loadCourse()
+    }
+  }, [courseId, loadCourse])
 
   const handleNavigate = (page: string) => {
     switch (page) {
@@ -257,7 +257,7 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-2">Course not found</h1>
-          <p className="text-muted-foreground mb-4">The course you're looking for doesn't exist or you don't have permission to access it.</p>
+          <p className="text-muted-foreground mb-4">The course you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to access it.</p>
           <Button onClick={() => router.push("/teacher-dashboard")}>
             Back to Dashboard
           </Button>

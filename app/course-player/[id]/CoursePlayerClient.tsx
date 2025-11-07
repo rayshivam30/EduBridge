@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -77,11 +77,7 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
 
   const currentLesson = sortedLessons[currentLessonIndex]
 
-  useEffect(() => {
-    loadProgress()
-  }, [course.id])
-
-  const loadProgress = async () => {
+  const loadProgress = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/progress?courseId=${encodeURIComponent(course.id)}`)
@@ -94,7 +90,11 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [course.id])
+
+  useEffect(() => {
+    loadProgress()
+  }, [loadProgress])
 
   const markLessonComplete = async (lessonId: string) => {
     setLoading(true)
@@ -116,14 +116,14 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
     }
   }
 
-  const getLessonProgress = (lessonId: string) => {
+  const getLessonProgress = useCallback((lessonId: string) => {
     const progress = progressData.find(p => p.lessonId === lessonId)
     return progress?.progress?.percent || 0
-  }
+  }, [progressData])
 
-  const isLessonCompleted = (lessonId: string) => {
+  const isLessonCompleted = useCallback((lessonId: string) => {
     return getLessonProgress(lessonId) >= 100
-  }
+  }, [getLessonProgress])
 
   const overallProgress = useMemo(() => {
     if (sortedLessons.length === 0) return 0
@@ -131,11 +131,11 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
       sum + getLessonProgress(lesson.id), 0
     )
     return Math.round(totalProgress / sortedLessons.length)
-  }, [sortedLessons, progressData])
+  }, [sortedLessons, getLessonProgress])
 
   const completedLessons = useMemo(() => 
     sortedLessons.filter(lesson => isLessonCompleted(lesson.id)).length,
-    [sortedLessons, progressData]
+    [sortedLessons, isLessonCompleted]
   )
 
   const handleNavigate = (page: string) => {
@@ -169,7 +169,7 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
         <div className="text-center py-12 border border-dashed rounded-lg">
           <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium text-foreground">No content available</h3>
-          <p className="text-muted-foreground">This lesson doesn't have any content yet.</p>
+          <p className="text-muted-foreground">This lesson doesn&apos;t have any content yet.</p>
         </div>
       )
     }

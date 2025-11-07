@@ -199,8 +199,8 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
     refreshList()
   }, [refreshList])
 
-  const threadsFromApi = threadsData?.items ?? []
   const uiThreads = useMemo<UIThread[]>(() => {
+    const threadsFromApi = threadsData?.items ?? []
     return threadsFromApi.map((t) => {
       const updatedAt = t.updatedAt || t.createdAt;
       const lastActive = updatedAt ? new Date(updatedAt).toLocaleDateString() : 'Recently';
@@ -222,7 +222,7 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
         lastActive,
       };
     });
-  }, [threadsFromApi]);
+  }, [threadsData]);
 
   return (
     <div className="min-h-screen bg-background">
