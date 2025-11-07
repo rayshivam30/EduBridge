@@ -48,8 +48,14 @@ export async function POST(req: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   const { title, body, courseId } = createThreadInput.parse(await req.json())
-  const thread = await prisma.thread.create({ data: { title, body, courseId: courseId ?? null, authorId: session.user.id } })
+  const thread = await prisma.thread.create({
+    data: { title, body, courseId: courseId ?? null, authorId: session.user.id },
+    include: { author: { select: { id: true, name: true, image: true } }, _count: { select: { replies: true } } }
+  })
+
+  // Clear relevant caches
   await redis.del(THREAD_LIST(undefined, 1, ""))
   if (courseId) await redis.del(THREAD_LIST(courseId, 1, ""))
+
   return NextResponse.json(thread, { status: 201 })
 }

@@ -18,6 +18,8 @@ function pageToPath(page: string): string {
       return "/teacher-dashboard"
     case "community-forum":
       return "/community-forum"
+    case "create-thread":
+      return "/community-forum/create-thread"
     default:
       return "/"
   }
