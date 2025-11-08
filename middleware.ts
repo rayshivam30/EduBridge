@@ -16,7 +16,7 @@ export async function middleware(req: NextRequest) {
   const isAuth = !!token
 
   // Redirect unauthenticated users to login
-  if (!isAuth && (pathname.startsWith("/student") || pathname.startsWith("/teacher") || pathname.startsWith("/onboarding"))) {
+  if (!isAuth && (pathname.startsWith("/student") || pathname.startsWith("/teacher") || pathname.startsWith("/onboarding") || pathname.startsWith("/announcements"))) {
     const url = req.nextUrl.clone()
     url.pathname = "/login"
     url.searchParams.set("callbackUrl", req.nextUrl.pathname)

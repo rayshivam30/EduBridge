@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
@@ -13,15 +13,18 @@ const courseInput = z.object({
   status: z.enum(["draft", "published", "archived"]).default("draft"),
 })
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
+    const { searchParams } = new URL(request.url)
+    const isTeacherRequest = searchParams.get("teacher") === "true"
+
     // Create a user-specific cache key
     const userCacheKey = `${COURSE_LIST_KEY}:${session.user.id}`
     const cached = await redis.get(userCacheKey)
-    if (cached) return NextResponse.json(cached)
+    if (cached && !isTeacherRequest) return NextResponse.json(cached)
 
     // Only fetch courses created by the authenticated user
     const data = await prisma.course.findMany({
@@ -32,6 +35,16 @@ export async function GET() {
         createdBy: { select: { id: true, name: true, image: true } },
       },
     })
+
+    // For teacher requests (like announcement dialog), return in expected format
+    if (isTeacherRequest) {
+      const courses = data.map(course => ({
+        id: course.id,
+        title: course.title
+      }))
+      return NextResponse.json({ courses })
+    }
+
     await redis.set(userCacheKey, data, { ex: 60 })
     return NextResponse.json(data)
   } catch (e) {

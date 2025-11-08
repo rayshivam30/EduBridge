@@ -340,10 +340,10 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
         {/* Analytics Section */}
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground">Analytics Overview</h2>
-          <Button 
-            onClick={loadAnalytics} 
+          <Button
+            onClick={loadAnalytics}
             disabled={analyticsLoading}
-            variant="outline" 
+            variant="outline"
             size="sm"
             className="gap-2"
           >
@@ -375,7 +375,7 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="day" stroke="var(--muted-foreground)" />
                   <YAxis stroke="var(--muted-foreground)" />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
                     labelFormatter={(label) => `${label}`}
                     formatter={(value, name) => [
@@ -421,7 +421,7 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="name" stroke="var(--muted-foreground)" />
                   <YAxis stroke="var(--muted-foreground)" domain={[0, 100]} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }}
                     formatter={(value) => [`${value}%`, 'Average Progress']}
                   />
@@ -466,7 +466,7 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                     default: return BookOpen
                   }
                 }
-                
+
                 const getActivityColor = (type: string) => {
                   switch (type) {
                     case 'completion': return "bg-secondary/10 text-secondary"
@@ -475,9 +475,9 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                     default: return "bg-primary/10 text-primary"
                   }
                 }
-                
+
                 const ActivityIcon = getActivityIcon(activity.type)
-                
+
                 return (
                   <div key={idx} className="flex items-center gap-4 pb-4 border-b border-border last:border-b-0 last:pb-0">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getActivityColor(activity.type)}`}>

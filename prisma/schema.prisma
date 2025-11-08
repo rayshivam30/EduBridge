@@ -43,9 +43,11 @@ model User {
   replies        Reply[]
   progresses     Progress[]
   payments       Payment[]
-  achievements   Achievement[]
-  quizAttempts   QuizAttempt[]
-  customQuizzes  CustomQuiz[]
+  achievements     Achievement[]
+  quizAttempts     QuizAttempt[]
+  customQuizzes    CustomQuiz[]
+  announcements    Announcement[]
+  announcementLikes AnnouncementLike[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -97,10 +99,11 @@ model Course {
   createdById String
   createdBy   User    @relation("CourseAuthor", fields: [createdById], references: [id])
 
-  lessons     Lesson[]
-  enrollments Enrollment[]
-  threads     Thread[]
-  payments    Payment[]
+  lessons       Lesson[]
+  enrollments   Enrollment[]
+  threads       Thread[]
+  payments      Payment[]
+  announcements Announcement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -290,4 +293,39 @@ model QuizAttempt {
 
   @@index([userId])
   @@index([quizId])
+}
+
+// Announcements Models
+model Announcement {
+  id          String @id @default(cuid())
+  title       String
+  content     String
+  authorId    String
+  courseId    String?
+  isPublic    Boolean @default(false) // If true, visible to all students; if false, only to enrolled students
+
+  author User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  likes  AnnouncementLike[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([courseId])
+  @@index([createdAt])
+}
+
+model AnnouncementLike {
+  id             String @id @default(cuid())
+  userId         String
+  announcementId String
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, announcementId])
+  @@index([announcementId])
 }
