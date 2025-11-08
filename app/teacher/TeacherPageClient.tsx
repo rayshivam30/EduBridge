@@ -9,6 +9,8 @@ function pageToPath(page: string): string {
       return "/"
     case "student-dashboard":
       return "/student-dashboard"
+    case "profile":
+      return "/teacher/profile"
     case "course-player":
       return "/course-player"
     case "ai-tutor":

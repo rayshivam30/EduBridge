@@ -1,9 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { BookOpen, Home, LogOut } from "lucide-react"
+import { BookOpen, Home, LogOut, User } from "lucide-react"
 
 interface NavigationProps {
   currentPage: string
@@ -12,6 +12,7 @@ interface NavigationProps {
 
 export function Navigation({ currentPage, onNavigate }: NavigationProps) {
   const router = useRouter()
+  const { data: session } = useSession()
 
   const handleLogout = async () => {
     await signOut({ redirect: false })
@@ -19,12 +20,19 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     router.refresh()
   }
 
+  const getHomePage = () => {
+    const role = (session?.user as any)?.role
+    if (role === "STUDENT") return "student-dashboard"
+    if (role === "TEACHER") return "teacher-dashboard"
+    return "landing"
+  }
+
   return (
     <nav className="border-b border-border bg-background sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <button
-            onClick={() => onNavigate("landing")}
+            onClick={() => onNavigate(getHomePage())}
             className="flex items-center gap-2 hover:text-primary transition-colors"
           >
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -35,14 +43,25 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
 
           <div className="flex items-center gap-4">
             <button
-              onClick={() => onNavigate("landing")}
+              onClick={() => onNavigate(getHomePage())}
               aria-label="Home"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                currentPage === "landing" ? "bg-primary/10 text-primary" : "text-foreground hover:text-primary"
+                currentPage === getHomePage() ? "bg-primary/10 text-primary" : "text-foreground hover:text-primary"
               }`}
             >
               <Home className="w-4 h-4" />
             </button>
+            {session?.user && (
+              <button
+                onClick={() => onNavigate("profile")}
+                aria-label="Profile"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentPage === "profile" ? "bg-primary/10 text-primary" : "text-foreground hover:text-primary"
+                }`}
+              >
+                <User className="w-4 h-4" />
+              </button>
+            )}
             <Button
               variant="ghost"
               onClick={handleLogout}
