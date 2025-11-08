@@ -430,6 +430,16 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 </div>
               </Button>
               <Button
+                className="w-full justify-start gap-3 h-auto py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                onClick={() => router.push("/student/revision")}
+              >
+                <MessageCircle className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Revision Session</div>
+                  <div className="text-xs opacity-90">Explain what you learned & get AI feedback</div>
+                </div>
+              </Button>
+              <Button
                 className="w-full justify-start gap-3 h-auto py-3 bg-muted text-muted-foreground hover:bg-muted/90"
                 onClick={() => onNavigate?.("community-forum")}
               >
