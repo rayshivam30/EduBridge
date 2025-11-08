@@ -1,9 +1,5 @@
 import Groq from 'groq-sdk'
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY!
-})
-
 export interface QuizQuestion {
   question: string
   options: string[]
@@ -58,6 +54,10 @@ Return this exact JSON structure:
 Generate exactly ${questionCount} questions about ${topic} at ${difficulty} difficulty level.`
 
     try {
+      const groq = new Groq({
+        apiKey: process.env.GROQ_API_KEY!
+      })
+
       const completion = await groq.chat.completions.create({
         messages: [
           {
@@ -76,7 +76,7 @@ Generate exactly ${questionCount} questions about ${topic} at ${difficulty} diff
       })
 
       const text = completion.choices[0]?.message?.content?.trim()
-      
+
       if (!text) {
         throw new Error('No response from Groq API')
       }
@@ -85,7 +85,7 @@ Generate exactly ${questionCount} questions about ${topic} at ${difficulty} diff
 
       // Try to extract JSON more robustly
       let jsonText = text
-      
+
       // Remove markdown code blocks if present
       if (text.includes('```json')) {
         const match = text.match(/```json\s*([\s\S]*?)\s*```/)
@@ -102,19 +102,19 @@ Generate exactly ${questionCount} questions about ${topic} at ${difficulty} diff
       }
 
       const parsed = JSON.parse(jsonMatch[0])
-      
+
       if (!parsed.questions || !Array.isArray(parsed.questions)) {
         throw new Error('Invalid questions format')
       }
 
       // Validate and fix questions
       const validQuestions = parsed.questions
-        .filter((q: any) => 
-          q.question && 
-          Array.isArray(q.options) && 
+        .filter((q: any) =>
+          q.question &&
+          Array.isArray(q.options) &&
           q.options.length === 4 &&
           typeof q.correctAnswer === 'number' &&
-          q.correctAnswer >= 0 && 
+          q.correctAnswer >= 0 &&
           q.correctAnswer < 4
         )
         .map((q: any) => ({
@@ -135,7 +135,7 @@ Generate exactly ${questionCount} questions about ${topic} at ${difficulty} diff
 
   private static getFallbackQuestions(topic: string, difficulty: string, count: number): QuizQuestion[] {
     const points = difficulty === 'easy' ? 5 : difficulty === 'medium' ? 10 : 15
-    
+
     const questionTemplates = [
       {
         question: `What is a fundamental concept in ${topic}?`,
@@ -193,7 +193,7 @@ Generate exactly ${questionCount} questions about ${topic} at ${difficulty} diff
         explanation: `${topic} is valuable because it helps solve real-world problems.`
       }
     ]
-    
+
     return Array.from({ length: count }, (_, i) => {
       const template = questionTemplates[i % questionTemplates.length]
       return {
@@ -230,6 +230,10 @@ Format:
 }`
 
     try {
+      const groq = new Groq({
+        apiKey: process.env.GROQ_API_KEY!
+      })
+
       const completion = await groq.chat.completions.create({
         messages: [
           {
@@ -247,7 +251,7 @@ Format:
       })
 
       const text = completion.choices[0]?.message?.content?.trim()
-      
+
       if (!text) {
         throw new Error('No response from Groq API')
       }
