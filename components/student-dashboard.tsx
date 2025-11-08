@@ -186,6 +186,29 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
           </Button>
         </div>
 
+        {/* Personalized Roadmap Promotion */}
+        <Card className="mb-8 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Get Your Personalized Learning Roadmap</h3>
+                  <p className="text-muted-foreground text-sm">Tell us what you want to learn and get a customized path with course recommendations tailored just for you!</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => router.push("/student/recommendations")}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+              >
+                Create Roadmap
+              </Button>
+            </div>
+          </div>
+        </Card>
+
         {/* Stats Grid */}
         <div className="grid md:grid-cols-4 gap-4 mb-8">
           {dynamicStats.map((stat, idx) => (
@@ -341,6 +364,16 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 <div className="text-left">
                   <div className="font-semibold">Ask AI Tutor</div>
                   <div className="text-xs opacity-90">Get help with your doubts</div>
+                </div>
+              </Button>
+              <Button
+                className="w-full justify-start gap-3 h-auto py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+                onClick={() => router.push("/student/recommendations")}
+              >
+                <TrendingUp className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Get Learning Roadmap</div>
+                  <div className="text-xs opacity-90">Personalized course recommendations</div>
                 </div>
               </Button>
               <Button
