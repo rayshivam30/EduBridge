@@ -3,6 +3,7 @@ import { z } from "zod"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redis } from "@/lib/redis"
+import { GamificationService, POINTS } from "@/lib/gamification"
 
 const PROGRESS_LIST = (userId: string, courseId: string) => `progress:${userId}:${courseId}:v1`
 
@@ -48,11 +49,40 @@ export async function POST(req: Request) {
   const lesson = await prisma.lesson.findUnique({ where: { id: lessonId }, select: { courseId: true } })
   if (!lesson) return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
 
+  // Check if this is a new completion (100% for the first time)
+  const existingProgress = await prisma.progress.findUnique({
+    where: { userId_lessonId: { userId: session.user.id, lessonId } }
+  })
+  
+  const isNewCompletion = percent === 100 && (!existingProgress || existingProgress.percent < 100)
+  
   const progress = await prisma.progress.upsert({
     where: { userId_lessonId: { userId: session.user.id, lessonId } },
-    update: { percent, completedAt: completedAt ? new Date(completedAt) : null },
-    create: { userId: session.user.id, lessonId, percent, completedAt: completedAt ? new Date(completedAt) : null },
+    update: { 
+      percent, 
+      completedAt: completedAt ? new Date(completedAt) : null,
+      pointsEarned: isNewCompletion ? POINTS.LESSON_COMPLETION : (existingProgress?.pointsEarned || 0)
+    },
+    create: { 
+      userId: session.user.id, 
+      lessonId, 
+      percent, 
+      completedAt: completedAt ? new Date(completedAt) : null,
+      pointsEarned: isNewCompletion ? POINTS.LESSON_COMPLETION : 0
+    },
   })
+
+  // Award points and update gamification if lesson completed for first time
+  if (isNewCompletion) {
+    await GamificationService.awardPoints(
+      session.user.id,
+      POINTS.LESSON_COMPLETION,
+      'Lesson completion'
+    )
+    
+    await GamificationService.updateStreak(session.user.id)
+    await GamificationService.checkAndAwardAchievements(session.user.id)
+  }
 
   await redis.del(PROGRESS_LIST(session.user.id, lesson.courseId))
   return NextResponse.json(progress)

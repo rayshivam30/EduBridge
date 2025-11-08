@@ -16,8 +16,11 @@ import {
   Pie,
   Cell,
 } from "recharts"
-import { BookOpen, Clock, Award, Users, TrendingUp, Play, MessageCircle } from "lucide-react"
+import { BookOpen, Clock, Award, Users, TrendingUp, Play, MessageCircle, Brain, Zap } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { GamificationDashboard } from "@/components/gamification/gamification-dashboard"
+import { PointsDisplay } from "@/components/gamification/points-display"
+import { StreakCounter } from "@/components/gamification/streak-counter"
 
 interface StudentDashboardProps {
   onNavigate?: (page: string) => void
@@ -29,6 +32,19 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
   const [enrollments, setEnrollments] = useState<any[] | null>(null)
   const [publicCourses, setPublicCourses] = useState<any[] | null>(null)
   const [dashboardStats, setDashboardStats] = useState<any | null>(null)
+  const [gamificationStats, setGamificationStats] = useState<any | null>(null)
+
+  const loadGamificationStats = async () => {
+    try {
+      const gamificationRes = await fetch("/api/gamification/stats", { cache: "no-store" })
+      if (gamificationRes.ok) {
+        const gamificationData = await gamificationRes.json()
+        setGamificationStats(gamificationData)
+      }
+    } catch (error) {
+      console.error('Error loading gamification stats:', error)
+    }
+  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -54,6 +70,9 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
           const coursesData = await coursesRes.json()
           setPublicCourses(Array.isArray(coursesData) ? coursesData : [])
         }
+
+        // Load gamification stats
+        await loadGamificationStats()
       } catch (error) {
         console.error("Error loading dashboard data:", error)
       } finally {
@@ -61,6 +80,14 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
       }
     }
     loadData()
+
+    // Listen for focus events to refresh data when returning to the page
+    const handleFocus = () => {
+      loadGamificationStats()
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
   }, [])
 
   const currentCourses = useMemo(() => {
@@ -177,13 +204,29 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back!</h1>
             <p className="text-muted-foreground">Here{'\''}s your learning progress this week</p>
           </div>
-          <Button
-            onClick={() => router.push("/courses")}
-            className="gap-2"
-          >
-            <BookOpen className="w-4 h-4" />
-            Browse Courses
-          </Button>
+          <div className="flex items-center gap-4">
+            {gamificationStats && (
+              <div className="flex items-center gap-3">
+                <PointsDisplay 
+                  points={gamificationStats.totalPoints} 
+                  level={gamificationStats.level}
+                  variant="compact"
+                />
+                <StreakCounter 
+                  currentStreak={gamificationStats.currentStreak}
+                  longestStreak={gamificationStats.longestStreak}
+                  variant="compact"
+                />
+              </div>
+            )}
+            <Button
+              onClick={() => router.push("/courses")}
+              className="gap-2"
+            >
+              <BookOpen className="w-4 h-4" />
+              Browse Courses
+            </Button>
+          </div>
         </div>
 
         {/* Personalized Roadmap Promotion */}
@@ -377,6 +420,16 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 </div>
               </Button>
               <Button
+                className="w-full justify-start gap-3 h-auto py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+                onClick={() => router.push("/quiz")}
+              >
+                <Brain className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Take AI Quiz</div>
+                  <div className="text-xs opacity-90">Test your knowledge & earn points</div>
+                </div>
+              </Button>
+              <Button
                 className="w-full justify-start gap-3 h-auto py-3 bg-muted text-muted-foreground hover:bg-muted/90"
                 onClick={() => onNavigate?.("community-forum")}
               >
@@ -389,6 +442,26 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
             </div>
           </Card>
         </div>
+
+        {/* Gamification Dashboard */}
+        {gamificationStats && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Zap className="w-6 h-6 text-yellow-600" />
+                <h3 className="text-lg font-semibold text-foreground">Your Progress & Achievements</h3>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/student/gamification")}
+              >
+                View Details
+              </Button>
+            </div>
+            <GamificationDashboard />
+          </div>
+        )}
 
         {/* Recommendations */}
         <Card className="p-6">

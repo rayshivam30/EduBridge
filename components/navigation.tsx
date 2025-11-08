@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { BookOpen, Home, LogOut, User } from "lucide-react"
+import { BookOpen, Home, LogOut, User, Brain } from "lucide-react"
 
 interface NavigationProps {
   currentPage: string
@@ -62,6 +62,17 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
             >
               <Home className="w-4 h-4" />
             </button>
+            {session?.user && (session.user as any)?.role === "STUDENT" && (
+              <button
+                onClick={() => router.push("/quiz")}
+                aria-label="AI Quiz"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentPage === "quiz" ? "bg-primary/10 text-primary" : "text-foreground hover:text-primary"
+                }`}
+              >
+                <Brain className="w-4 h-4" />
+              </button>
+            )}
             {session?.user && (
               <button
                 onClick={handleProfileClick}
