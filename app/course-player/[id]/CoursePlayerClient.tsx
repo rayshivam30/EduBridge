@@ -22,7 +22,14 @@ import { Navigation } from "@/components/navigation"
 interface Lesson {
   id: string
   title: string
-  contentURL: string | null
+  description: string | null
+  contentURL: string | null // Keep for backward compatibility
+  contentTypes: string[]
+  textContent: string | null
+  externalLinks: string[]
+  videoType: string | null
+  videoUrl: string | null
+  youtubeUrl: string | null
   order: number
 }
 
@@ -119,14 +126,29 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
 
   const handleNavigate = (page: string) => {
     switch (page) {
+      case "landing":
+        router.push("/student-dashboard") // For logged-in users, home should go to dashboard
+        break
       case "student-dashboard":
         router.push("/student-dashboard")
         break
       case "courses":
         router.push("/courses")
         break
+      case "course-player":
+        router.push("/course-player")
+        break
+      case "ai-tutor":
+        router.push("/ai-tutor")
+        break
+      case "teacher-dashboard":
+        router.push("/teacher-dashboard")
+        break
+      case "community-forum":
+        router.push("/community-forum")
+        break
       default:
-        router.push(`/${page}`)
+        router.push("/student-dashboard") // Default to dashboard for logged-in users
     }
   }
 
@@ -143,7 +165,9 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
   }
 
   const renderLessonContent = (lesson: Lesson) => {
-    if (!lesson.contentURL) {
+    const hasContent = lesson.contentTypes?.length > 0 || lesson.contentURL
+    
+    if (!hasContent) {
       return (
         <div className="text-center py-12 border border-dashed rounded-lg">
           <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -153,54 +177,124 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
       )
     }
 
-    // Check if it's iframe embed code
-    if (lesson.contentURL.includes('<iframe') && lesson.contentURL.includes('</iframe>')) {
-      return (
-        <div className="aspect-video bg-black rounded-lg overflow-hidden">
-          <div 
-            dangerouslySetInnerHTML={{ __html: lesson.contentURL }}
-            className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
-          />
-        </div>
-      )
-    }
-
-    // Check if it's a video URL
-    if (lesson.contentURL.includes('youtube.com') || lesson.contentURL.includes('youtu.be') || lesson.contentURL.includes('vimeo.com')) {
-      return (
-        <div className="aspect-video bg-black rounded-lg overflow-hidden">
-          <iframe
-            src={lesson.contentURL}
-            className="w-full h-full"
-            allowFullScreen
-            title={lesson.title}
-          />
-        </div>
-      )
-    }
-
-    // Check if it's a regular URL
-    if (lesson.contentURL.startsWith('http')) {
-      return (
-        <div className="border rounded-lg p-6 text-center">
-          <LinkIcon className="mx-auto h-12 w-12 text-primary mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">External Resource</h3>
-          <p className="text-muted-foreground mb-4">This lesson links to an external resource.</p>
-          <Button asChild>
-            <a href={lesson.contentURL} target="_blank" rel="noopener noreferrer">
-              Open Resource
-            </a>
-          </Button>
-        </div>
-      )
-    }
-
-    // Treat as text content
     return (
-      <div className="prose prose-gray dark:prose-invert max-w-none">
-        <div className="whitespace-pre-wrap bg-muted/50 rounded-lg p-6">
-          {lesson.contentURL}
-        </div>
+      <div className="space-y-6">
+        {/* Lesson Description */}
+        {lesson.description && (
+          <div className="prose prose-gray dark:prose-invert max-w-none">
+            <p className="text-muted-foreground">{lesson.description}</p>
+          </div>
+        )}
+
+        {/* Video Content */}
+        {(lesson.contentTypes?.includes('video') || lesson.videoUrl || lesson.youtubeUrl) && (
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold">Video</h4>
+            {lesson.youtubeUrl ? (
+              <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                {lesson.youtubeUrl.includes('<iframe') ? (
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: lesson.youtubeUrl }}
+                    className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
+                  />
+                ) : (
+                  <iframe
+                    src={lesson.youtubeUrl}
+                    className="w-full h-full"
+                    allowFullScreen
+                    title={lesson.title}
+                  />
+                )}
+              </div>
+            ) : lesson.videoUrl ? (
+              <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                <video
+                  src={lesson.videoUrl}
+                  controls
+                  className="w-full h-full"
+                  title={lesson.title}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* Text Content */}
+        {(lesson.contentTypes?.includes('text') || lesson.textContent) && (
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold">Notes</h4>
+            <div className="prose prose-gray dark:prose-invert max-w-none">
+              <div className="whitespace-pre-wrap bg-muted/50 rounded-lg p-6">
+                {lesson.textContent}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* External Links */}
+        {(lesson.contentTypes?.includes('links') || lesson.externalLinks?.length > 0) && (
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold">Resources</h4>
+            <div className="space-y-2">
+              {lesson.externalLinks?.map((link, index) => (
+                <div key={index} className="border rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <LinkIcon className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium">External Resource {index + 1}</span>
+                  </div>
+                  <Button asChild size="sm">
+                    <a href={link} target="_blank" rel="noopener noreferrer">
+                      Open Link
+                    </a>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Backward compatibility with old contentURL */}
+        {lesson.contentURL && !lesson.contentTypes?.length && (
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold">Content</h4>
+            {lesson.contentURL.includes('<iframe') && lesson.contentURL.includes('</iframe>') ? (
+              <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                <div 
+                  dangerouslySetInnerHTML={{ __html: lesson.contentURL }}
+                  className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
+                />
+              </div>
+            ) : lesson.contentURL.includes('youtube.com') || lesson.contentURL.includes('youtu.be') || lesson.contentURL.includes('vimeo.com') ? (
+              <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                <iframe
+                  src={lesson.contentURL}
+                  className="w-full h-full"
+                  allowFullScreen
+                  title={lesson.title}
+                />
+              </div>
+            ) : lesson.contentURL.startsWith('http') ? (
+              <div className="border rounded-lg p-6 text-center">
+                <LinkIcon className="mx-auto h-12 w-12 text-primary mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">External Resource</h3>
+                <p className="text-muted-foreground mb-4">This lesson links to an external resource.</p>
+                <Button asChild>
+                  <a href={lesson.contentURL} target="_blank" rel="noopener noreferrer">
+                    Open Resource
+                  </a>
+                </Button>
+              </div>
+            ) : (
+              <div className="prose prose-gray dark:prose-invert max-w-none">
+                <div className="whitespace-pre-wrap bg-muted/50 rounded-lg p-6">
+                  {lesson.contentURL}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     )
   }

@@ -267,7 +267,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
             <Card className="p-6 mb-8">
               <h3 className="text-xl font-semibold text-foreground mb-4">Course Content</h3>
               <div className="space-y-4">
-                {courseModules.map((module, idx) => (
+                {courseModules.map((module: any, idx: number) => (
                   <div key={idx} className="border border-border rounded-lg">
                     <div className="p-4 bg-muted/30">
                       <div className="flex items-center justify-between">
@@ -278,7 +278,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                       </div>
                     </div>
                     <div className="p-4 space-y-2">
-                      {module.lessons.map((lesson, lessonIdx) => (
+                      {module.lessons.map((lesson: any, lessonIdx: number) => (
                         <div key={lessonIdx} className="flex items-center justify-between py-2">
                           <div className="flex items-center gap-3">
                             <Play className="h-4 w-4 text-muted-foreground" />
@@ -410,7 +410,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
             <Card className="p-6">
               <h4 className="font-semibold text-foreground mb-4">Related Courses</h4>
               <div className="space-y-4">
-                {relatedCourses.map((relatedCourse, idx) => (
+                {relatedCourses.map((relatedCourse: any, idx: number) => (
                   <div key={idx} className="flex gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors">
                     <div className="w-16 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded flex items-center justify-center flex-shrink-0">
                       <BookOpen className="h-4 w-4 text-primary" />
@@ -446,39 +446,45 @@ const learningObjectives = [
 
 const courseModules = [
   {
-    title: "Module 1: Getting Started",
-    duration: "2h 30m",
+    title: "Getting Started",
+    duration: "2 hours",
     lessons: [
-      { title: "Course Introduction", duration: "5:30" },
-      { title: "Setting up Development Environment", duration: "15:20" },
-      { title: "HTML Fundamentals", duration: "25:45" },
-      { title: "CSS Basics", duration: "30:15" }
+      { title: "Introduction to the Course", duration: "5:30" },
+      { title: "Setting up Development Environment", duration: "12:45" },
+      { title: "Your First Project", duration: "18:20" }
     ]
   },
   {
-    title: "Module 2: Advanced Concepts",
-    duration: "3h 15m",
+    title: "Core Concepts",
+    duration: "3 hours",
     lessons: [
-      { title: "JavaScript Fundamentals", duration: "45:30" },
-      { title: "DOM Manipulation", duration: "35:20" },
-      { title: "Event Handling", duration: "25:45" },
-      { title: "Async Programming", duration: "40:15" }
+      { title: "Understanding the Fundamentals", duration: "22:15" },
+      { title: "Working with Data", duration: "16:40" },
+      { title: "Best Practices", duration: "14:30" }
     ]
   },
   {
-    title: "Module 3: Project Building",
-    duration: "2h 45m",
+    title: "Advanced Topics",
+    duration: "3 hours",
     lessons: [
-      { title: "Planning Your Project", duration: "20:30" },
-      { title: "Building the Frontend", duration: "55:20" },
-      { title: "Adding Interactivity", duration: "35:45" },
-      { title: "Testing and Deployment", duration: "25:15" }
+      { title: "Advanced Techniques", duration: "25:10" },
+      { title: "Performance Optimization", duration: "19:45" },
+      { title: "Final Project", duration: "28:30" }
     ]
   }
 ]
 
 const relatedCourses = [
-  { title: "Advanced JavaScript Concepts", price: 2999 },
-  { title: "React for Beginners", price: 0 },
-  { title: "Node.js Backend Development", price: 3999 }
+  {
+    title: "Advanced Web Development",
+    price: 2999
+  },
+  {
+    title: "JavaScript Fundamentals",
+    price: 0
+  },
+  {
+    title: "React for Beginners",
+    price: 1999
+  }
 ]

@@ -1,38 +1,67 @@
-"use client"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { redirect } from "next/navigation"
+import { CourseOverviewClient } from "./CourseOverviewClient"
 
-import { useRouter } from "next/navigation"
-import { Navigation } from "@/components/navigation"
-import { CoursePlayer } from "@/components/course-player"
+export default async function Page() {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/login")
 
-function pageToPath(page: string): string {
-  switch (page) {
-    case "landing":
-      return "/"
-    case "student-dashboard":
-      return "/student-dashboard"
-    case "course-player":
-      return "/course-player"
-    case "ai-tutor":
-      return "/ai-tutor"
-    case "teacher-dashboard":
-      return "/teacher-dashboard"
-    case "community-forum":
-      return "/community-forum"
-    default:
-      return "/"
+  // Get user's enrolled courses with progress data
+  const enrollments = await prisma.enrollment.findMany({
+    where: { 
+      userId: session.user.id,
+      status: "active"
+    },
+    include: {
+      course: {
+        include: {
+          _count: { select: { lessons: true } },
+          createdBy: { select: { name: true } },
+          lessons: {
+            select: { id: true },
+            orderBy: { order: "asc" }
+          }
+        }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  })
+
+  // If user has only one course, redirect directly to it
+  if (enrollments.length === 1) {
+    redirect(`/course-player/${enrollments[0].courseId}`)
   }
-}
 
-export default function Page() {
-  const router = useRouter()
-  const onNavigate = (page: string) => router.push(pageToPath(page))
+  // Get progress for all enrolled courses
+  const allLessonIds = enrollments.flatMap(e => e.course.lessons.map(l => l.id))
+  const progressData = await prisma.progress.findMany({
+    where: {
+      userId: session.user.id,
+      lessonId: { in: allLessonIds }
+    }
+  })
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation currentPage="course-player" onNavigate={onNavigate} />
-      <CoursePlayer onNavigate={onNavigate} />
-    </div>
-  )
+  // Calculate progress for each course
+  const coursesWithProgress = enrollments.map(enrollment => {
+    const courseProgress = progressData.filter(p => 
+      enrollment.course.lessons.some(l => l.id === p.lessonId)
+    )
+    const completedLessons = courseProgress.filter(p => p.percent >= 100).length
+    const totalLessons = enrollment.course._count.lessons
+    const overallProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+
+    return {
+      ...enrollment,
+      progress: {
+        completed: completedLessons,
+        total: totalLessons,
+        percentage: overallProgress
+      }
+    }
+  })
+
+  return <CourseOverviewClient courses={coursesWithProgress} />
 }
 
 
