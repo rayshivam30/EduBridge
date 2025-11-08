@@ -8,14 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   ArrowLeft, 
-  Play, 
   CheckCircle, 
   Circle, 
   BookOpen, 
-  Clock, 
   User,
   FileText,
-  Video,
   Link as LinkIcon,
   ChevronRight,
   ChevronLeft
@@ -29,25 +26,7 @@ interface Lesson {
   order: number
 }
 
-interface Course {
-  id: string
-  title: string
-  description: string
-  price: number | string // Can be Decimal from Prisma
-  status: string
-  lessons: Lesson[]
-  createdBy: {
-    id: string
-    name: string | null
-    image: string | null
-  }
-  _count: {
-    enrollments: number
-  }
-  createdAt: Date
-  updatedAt: Date
-  createdById: string
-}
+
 
 interface ProgressRow {
   lessonId: string

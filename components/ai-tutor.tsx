@@ -1,46 +1,152 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Send, Plus, Settings, Lightbulb, BookOpen, HelpCircle, MessageCircle, Zap } from "lucide-react"
+import { Send, Plus, Lightbulb, BookOpen, HelpCircle, MessageCircle, Zap, Loader2 } from "lucide-react"
+
+interface Message {
+  id: number
+  role: "user" | "assistant"
+  content: string
+  timestamp: Date
+}
 
 interface AITutorProps {
   onNavigate: (page: string) => void
 }
 
 export function AITutor({ onNavigate }: AITutorProps) {
-  const [messages, setMessages] = useState(initialMessages)
+  const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
   const [selectedMode, setSelectedMode] = useState("general")
+  const [isLoading, setIsLoading] = useState(false)
+  const [recentChats, setRecentChats] = useState<Array<{title: string, date: string, messages: Message[]}>>([])
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const handleSendMessage = () => {
-    if (inputValue.trim()) {
-      const newMessage = {
-        id: messages.length + 1,
+  // Initialize messages based on selected mode
+  useEffect(() => {
+    setMessages(getInitialMessages(selectedMode))
+  }, [selectedMode])
+
+  // Load recent chats from localStorage on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ai-tutor-chats')
+      if (saved) {
+        try {
+          setRecentChats(JSON.parse(saved))
+        } catch (error) {
+          console.error('Error loading saved chats:', error)
+        }
+      }
+    }
+  }, [])
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const handleSendMessage = async () => {
+    if (inputValue.trim() && !isLoading) {
+      const userMessage: Message = {
+        id: Date.now(),
         role: "user",
-        content: inputValue,
+        content: inputValue.trim(),
         timestamp: new Date(),
       }
-      setMessages([...messages, newMessage])
+      
+      const updatedMessages = [...messages, userMessage]
+      setMessages(updatedMessages)
+      setInputValue("")
+      setIsLoading(true)
 
-      // Simulate AI response
-      setTimeout(() => {
-        const aiResponse = {
-          id: messages.length + 2,
+      try {
+        // Prepare messages for API (convert to the format expected by the API)
+        const apiMessages = updatedMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }))
+
+        const response = await fetch('/api/ai-tutor', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: apiMessages,
+            mode: selectedMode
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to get AI response')
+        }
+
+        const data = await response.json()
+        
+        const aiResponse: Message = {
+          id: Date.now() + 1,
           role: "assistant",
-          content:
-            "That's a great question! Let me help you understand this better. " +
-            inputValue.substring(0, 20) +
-            "... is related to the core concepts we've been learning. Would you like me to explain it in more detail?",
+          content: data.message,
           timestamp: new Date(),
         }
-        setMessages((prev) => [...prev, aiResponse])
-      }, 500)
-
-      setInputValue("")
+        
+        setMessages(prev => [...prev, aiResponse])
+      } catch (error) {
+        console.error('Error getting AI response:', error)
+        let errorContent = "I'm sorry, I'm having trouble responding right now. Please try again in a moment."
+        
+        if (error instanceof Error) {
+          if (error.message.includes('API key')) {
+            errorContent = "It looks like the AI service isn't configured properly. Please contact your administrator."
+          } else if (error.message.includes('Failed to fetch')) {
+            errorContent = "I'm having trouble connecting to the AI service. Please check your internet connection and try again."
+          }
+        }
+        
+        const errorMessage: Message = {
+          id: Date.now() + 1,
+          role: "assistant",
+          content: errorContent,
+          timestamp: new Date(),
+        }
+        setMessages(prev => [...prev, errorMessage])
+      } finally {
+        setIsLoading(false)
+      }
     }
   }
+
+  const handleNewChat = () => {
+    // Save current chat if it has user messages
+    if (messages.some(msg => msg.role === 'user')) {
+      const chatTitle = messages.find(msg => msg.role === 'user')?.content.substring(0, 30) + '...' || 'New Chat'
+      const newChat = {
+        title: chatTitle,
+        date: new Date().toLocaleDateString(),
+        messages: messages
+      }
+      
+      const updatedChats = [newChat, ...recentChats.slice(0, 4)] // Keep only 5 recent chats
+      setRecentChats(updatedChats)
+      
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ai-tutor-chats', JSON.stringify(updatedChats))
+      }
+    }
+    
+    setMessages(getInitialMessages(selectedMode))
+    setInputValue("")
+  }
+
+  const loadChat = (chatMessages: Message[]) => {
+    setMessages(chatMessages)
+  }
+
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,7 +155,10 @@ export function AITutor({ onNavigate }: AITutorProps) {
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-4">
             {/* New Chat */}
-            <Button className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button 
+              onClick={handleNewChat}
+              className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
               <Plus className="w-4 h-4" />
               New Chat
             </Button>
@@ -82,25 +191,29 @@ export function AITutor({ onNavigate }: AITutorProps) {
             <Card className="p-4">
               <h3 className="font-semibold text-foreground mb-4 text-sm">Recent Conversations</h3>
               <div className="space-y-2">
-                {recentChats.map((chat, idx) => (
-                  <button key={idx} className="w-full text-left p-3 hover:bg-muted rounded-lg transition-colors">
-                    <p className="text-sm font-medium text-foreground truncate">{chat.title}</p>
-                    <p className="text-xs text-muted-foreground">{chat.date}</p>
-                  </button>
-                ))}
+                {recentChats.length > 0 ? (
+                  recentChats.map((chat, idx) => (
+                    <button 
+                      key={idx} 
+                      onClick={() => loadChat(chat.messages)}
+                      className="w-full text-left p-3 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <p className="text-sm font-medium text-foreground truncate">{chat.title}</p>
+                      <p className="text-xs text-muted-foreground">{chat.date}</p>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-4">No recent conversations</p>
+                )}
               </div>
             </Card>
 
-            {/* Settings */}
-            <Button variant="outline" className="w-full gap-2 bg-transparent">
-              <Settings className="w-4 h-4" />
-              Settings
-            </Button>
+
           </div>
 
           {/* Chat Area */}
           <div className="lg:col-span-3 flex flex-col">
-            <Card className="flex-1 p-6 flex flex-col mb-4 bg-gradient-to-b from-background to-muted/20">
+            <Card className="flex-1 p-6 flex flex-col bg-gradient-to-b from-background to-muted/20">
               {/* Mode Info */}
               <div className="mb-6 pb-6 border-b border-border">
                 <div className="flex items-start justify-between">
@@ -113,7 +226,11 @@ export function AITutor({ onNavigate }: AITutorProps) {
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Zap className="w-6 h-6 text-primary" />
+                    {(() => {
+                      const currentMode = tutorModes.find((m) => m.id === selectedMode)
+                      const IconComponent = currentMode?.icon || Zap
+                      return <IconComponent className="w-6 h-6 text-primary" />
+                    })()}
                   </div>
                 </div>
               </div>
@@ -129,7 +246,7 @@ export function AITutor({ onNavigate }: AITutorProps) {
                           : "bg-muted text-foreground rounded-bl-none"
                       }`}
                     >
-                      <p className="text-sm">{message.content}</p>
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                       <p
                         className={`text-xs mt-2 ${message.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}
                       >
@@ -138,6 +255,7 @@ export function AITutor({ onNavigate }: AITutorProps) {
                     </div>
                   </div>
                 ))}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Input Area */}
@@ -147,15 +265,21 @@ export function AITutor({ onNavigate }: AITutorProps) {
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                    placeholder="Ask me anything..."
-                    className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    onKeyPress={(e) => e.key === "Enter" && !isLoading && handleSendMessage()}
+                    placeholder={isLoading ? "AI is thinking..." : "Ask me anything..."}
+                    disabled={isLoading}
+                    className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                   />
                   <Button
                     onClick={handleSendMessage}
-                    className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                    disabled={isLoading || !inputValue.trim()}
+                    className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                   >
-                    <Send className="w-4 h-4" />
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
@@ -164,19 +288,7 @@ export function AITutor({ onNavigate }: AITutorProps) {
               </div>
             </Card>
 
-            {/* Quick Tips */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {quickTips.map((tip, idx) => (
-                <Card
-                  key={idx}
-                  className="p-4 hover:border-primary/50 transition-colors cursor-pointer bg-muted/30 hover:bg-muted/50"
-                >
-                  <tip.icon className="w-5 h-5 text-primary mb-2" />
-                  <p className="text-sm font-medium text-foreground">{tip.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{tip.example}</p>
-                </Card>
-              ))}
-            </div>
+
           </div>
         </div>
       </div>
@@ -211,49 +323,82 @@ const tutorModes = [
   },
 ]
 
-const initialMessages = [
-  {
+function getInitialMessages(mode: string): Message[] {
+  const baseMessage = {
     id: 1,
-    role: "assistant",
-    content:
-      "Hello! I'm your AI Tutor. I'm here to help you understand any concept from your courses. Whether you have questions about web development, data science, or anything else, feel free to ask!",
+    role: "assistant" as const,
     timestamp: new Date(Date.now() - 5 * 60000),
-  },
-  {
+  }
+
+  const secondMessage = {
     id: 2,
-    role: "assistant",
-    content:
-      "You can ask me to explain complex topics, help you solve problems, or dive deep into specific concepts. What would you like to learn about today?",
+    role: "assistant" as const,
     timestamp: new Date(Date.now() - 4 * 60000),
-  },
-]
+  }
 
-const recentChats = [
-  { title: "Understanding React Hooks", date: "Today" },
-  { title: "CSS Flexbox Explained", date: "Yesterday" },
-  { title: "JavaScript Async/Await", date: "2 days ago" },
-  { title: "Python List Comprehensions", date: "3 days ago" },
-]
+  switch (mode) {
+    case 'general':
+      return [
+        {
+          ...baseMessage,
+          content: "Hello! I'm your AI Tutor in General Q&A mode. I'm here to answer any questions you have with detailed, easy-to-understand explanations. Whether it's programming, science, math, or any other topic - just ask!"
+        },
+        {
+          ...secondMessage,
+          content: "I'll break down complex topics into simpler parts and use examples to help you understand. What would you like to learn about today?"
+        }
+      ]
+    
+    case 'concept':
+      return [
+        {
+          ...baseMessage,
+          content: "Welcome to Concept Deep Dive mode! I'm here to help you build deep understanding of any topic through comprehensive, step-by-step explanations."
+        },
+        {
+          ...secondMessage,
+          content: "I'll start with fundamentals and gradually introduce more complex aspects, using analogies and real-world examples. What concept would you like to explore in depth?"
+        }
+      ]
+    
+    case 'practice':
+      return [
+        {
+          ...baseMessage,
+          content: "Hi! I'm your AI Tutor in Practice Problems mode. I'm here to guide you through problem-solving by helping you think through the process step by step."
+        },
+        {
+          ...secondMessage,
+          content: "Instead of giving direct answers, I'll ask leading questions and provide hints to help you discover solutions yourself. What problem would you like to work on?"
+        }
+      ]
+    
+    case 'debate':
+      return [
+        {
+          ...baseMessage,
+          content: "Welcome to Debate Mode! I'm here to help you explore multiple perspectives on topics and develop critical thinking skills."
+        },
+        {
+          ...secondMessage,
+          content: "I'll present different viewpoints, challenge assumptions constructively, and help you analyze arguments. What topic would you like to discuss and explore from different angles?"
+        }
+      ]
+    
+    default:
+      return [
+        {
+          ...baseMessage,
+          content: "Hello! I'm your AI Tutor powered by advanced AI technology. I'm here to help you understand any concept, solve problems, and deepen your knowledge."
+        },
+        {
+          ...secondMessage,
+          content: "I can adapt my teaching style based on the mode you select. What would you like to learn about today?"
+        }
+      ]
+  }
+}
 
-const quickTips = [
-  {
-    icon: HelpCircle,
-    title: "Ask Questions",
-    example: "How does recursion work?",
-  },
-  {
-    icon: BookOpen,
-    title: "Learn Concepts",
-    example: "Explain the event loop",
-  },
-  {
-    icon: Lightbulb,
-    title: "Get Help",
-    example: "How do I debug this?",
-  },
-  {
-    icon: Zap,
-    title: "Quick Tips",
-    example: "Best practices for...",
-  },
-]
+
+
+

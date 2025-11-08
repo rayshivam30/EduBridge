@@ -27,6 +27,17 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
     return "landing"
   }
 
+  const handleProfileClick = () => {
+    const role = (session?.user as any)?.role
+    if (role === "STUDENT") {
+      router.push("/student/profile")
+    } else if (role === "TEACHER") {
+      router.push("/teacher/profile")
+    } else {
+      router.push("/student/profile") // Default fallback
+    }
+  }
+
   return (
     <nav className="border-b border-border bg-background sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -53,7 +64,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
             </button>
             {session?.user && (
               <button
-                onClick={() => onNavigate("profile")}
+                onClick={handleProfileClick}
                 aria-label="Profile"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   currentPage === "profile" ? "bg-primary/10 text-primary" : "text-foreground hover:text-primary"
