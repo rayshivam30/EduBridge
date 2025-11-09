@@ -15,9 +15,16 @@ import {
   FileText,
   Link as LinkIcon,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Download,
+  Wifi,
+  WifiOff,
+  Clock
 } from "lucide-react"
 import { Navigation } from "@/components/navigation"
+import { CourseDownload } from "@/components/course-download"
+import { useOffline } from "@/hooks/use-offline"
+import { useOfflineProgress } from "@/hooks/use-offline-progress"
 
 interface Lesson {
   id: string
@@ -55,6 +62,24 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
   const [progressData, setProgressData] = useState<ProgressRow[]>([])
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("content")
+  const { isOnline } = useOffline()
+  
+  // Get user ID from session (you may need to adjust this based on your auth setup)
+  const [userId, setUserId] = useState<string>("")
+  
+  useEffect(() => {
+    // Get user ID from session or auth context
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(session => {
+        if (session?.user?.id) {
+          setUserId(session.user.id)
+        }
+      })
+      .catch(console.error)
+  }, [])
+  
+  const offlineProgress = useOfflineProgress(userId, course.id)
 
   const sortedLessons = useMemo(() => 
     [...course.lessons].sort((a, b) => a.order - b.order),
@@ -66,17 +91,49 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
   const loadProgress = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/progress?courseId=${encodeURIComponent(course.id)}`)
-      if (res.ok) {
-        const data = await res.json()
-        setProgressData(data)
+      let progressData = []
+      
+      // Try to load offline progress first if user is available
+      if (userId) {
+        try {
+          const offlineProgressData = await offlineProgress.progress
+          if (offlineProgressData && offlineProgressData.length > 0) {
+            // Convert offline progress to the expected format
+            progressData = offlineProgressData.map(p => ({
+              lessonId: p.lessonId,
+              order: 0, // Will be set based on lesson order
+              progress: {
+                id: p.id,
+                percent: p.progress,
+                completedAt: p.completed ? p.lastAccessed.toISOString() : null
+              }
+            }))
+          }
+        } catch (offlineError) {
+          console.warn("Failed to load offline progress:", offlineError)
+        }
       }
+      
+      // If online, try to load fresh progress data
+      if (isOnline) {
+        try {
+          const res = await fetch(`/api/progress?courseId=${encodeURIComponent(course.id)}`)
+          if (res.ok) {
+            const onlineData = await res.json()
+            progressData = onlineData
+          }
+        } catch (onlineError) {
+          console.warn("Failed to load online progress, using offline data:", onlineError)
+        }
+      }
+      
+      setProgressData(progressData)
     } catch (error) {
       console.error("Error loading progress:", error)
     } finally {
       setLoading(false)
     }
-  }, [course.id])
+  }, [course.id, userId, isOnline, offlineProgress.progress])
 
   useEffect(() => {
     loadProgress()
@@ -85,18 +142,37 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
   const markLessonComplete = async (lessonId: string) => {
     setLoading(true)
     try {
-      await fetch("/api/progress", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          lessonId, 
-          percent: 100, 
-          completedAt: new Date().toISOString() 
-        }),
-      })
+      // Try online first, then fallback to offline
+      if (isOnline) {
+        await fetch("/api/progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            lessonId, 
+            percent: 100, 
+            completedAt: new Date().toISOString() 
+          }),
+        })
+      }
+      
+      // Also update offline progress if user ID is available
+      if (userId) {
+        await offlineProgress.markLessonComplete(lessonId, 0) // 0 time spent for now
+      }
+      
       await loadProgress()
     } catch (error) {
       console.error("Error marking lesson complete:", error)
+      
+      // If online request fails but we have userId, still try offline
+      if (userId && !isOnline) {
+        try {
+          await offlineProgress.markLessonComplete(lessonId, 0)
+          await loadProgress()
+        } catch (offlineError) {
+          console.error("Offline progress update also failed:", offlineError)
+        }
+      }
     } finally {
       setLoading(false)
     }
@@ -329,7 +405,21 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
                 <CheckCircle className="w-4 h-4" />
                 {completedLessons}/{sortedLessons.length} completed
               </div>
+              <div className="flex items-center gap-1">
+                {isOnline ? (
+                  <Wifi className="w-4 h-4 text-green-600" />
+                ) : (
+                  <WifiOff className="w-4 h-4 text-yellow-600" />
+                )}
+                {isOnline ? "Online" : "Offline"}
+              </div>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <CourseDownload 
+              courseId={course.id}
+              courseName={course.title}
+            />
           </div>
         </div>
 
@@ -340,11 +430,20 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
               <h3 className="text-lg font-semibold">Course Progress</h3>
               <p className="text-sm text-muted-foreground">
                 {completedLessons} of {sortedLessons.length} lessons completed
+                {!isOnline && " (Offline tracking)"}
               </p>
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-primary">{overallProgress}%</div>
-              <div className="text-sm text-muted-foreground">Complete</div>
+              <div className="text-sm text-muted-foreground">
+                Complete
+                {!isOnline && (
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    <Clock className="h-2 w-2 mr-1" />
+                    Will sync
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
           <div className="w-full bg-muted rounded-full h-3">
@@ -421,6 +520,11 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
                       >
                         <CheckCircle className="w-4 h-4" />
                         Mark as Complete
+                        {!isOnline && (
+                          <Badge variant="secondary" className="ml-1 text-xs">
+                            Offline
+                          </Badge>
+                        )}
                       </Button>
                     )}
                   </div>

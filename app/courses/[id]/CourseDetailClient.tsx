@@ -11,18 +11,20 @@ import {
   BookOpen,
   Clock,
   Users,
-  Star,
   Play,
   CheckCircle2,
   ArrowLeft,
   Download,
   Share2,
-  Heart,
   Award,
   Globe,
-  Calendar
+  Calendar,
+  Wifi,
+  WifiOff
 } from "lucide-react"
 import { Navigation } from "@/components/navigation"
+import { CourseDownload } from "@/components/course-download"
+import { useOffline } from "@/hooks/use-offline"
 
 interface CourseDetailClientProps {
   courseId: string
@@ -35,6 +37,9 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
   const [enrollment, setEnrollment] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [enrolling, setEnrolling] = useState(false)
+  const [relatedCourses, setRelatedCourses] = useState<any[]>([])
+  const [progressData, setProgressData] = useState<any[]>([])
+  const { isOnline } = useOffline()
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -52,6 +57,26 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
           const enrollmentData = await enrollmentRes.json()
           const userEnrollment = enrollmentData.find((e: any) => e.courseId === courseId)
           setEnrollment(userEnrollment)
+          
+          // If enrolled, fetch progress data
+          if (userEnrollment && session?.user?.id) {
+            const progressRes = await fetch(`/api/progress?courseId=${courseId}`)
+            if (progressRes.ok) {
+              const progressData = await progressRes.json()
+              setProgressData(progressData)
+            }
+          }
+        }
+
+        // Fetch related courses
+        const relatedRes = await fetch('/api/courses/public')
+        if (relatedRes.ok) {
+          const allCourses = await relatedRes.json()
+          // Filter out current course and take first 3
+          const related = allCourses
+            .filter((c: any) => c.id !== courseId)
+            .slice(0, 3)
+          setRelatedCourses(related)
         }
       } catch (error) {
         console.error("Failed to fetch course data:", error)
@@ -61,7 +86,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
     }
 
     fetchCourseData()
-  }, [courseId])
+  }, [courseId, session?.user?.id])
 
   const handleEnroll = async () => {
     if (!session?.user?.id) return
@@ -90,6 +115,33 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
   const handleStartCourse = () => {
     router.push(`/course-player/${courseId}`)
+  }
+
+  const handleShare = async () => {
+    const shareData = {
+      title: course.title,
+      text: `Check out this course: ${course.title}`,
+      url: window.location.href
+    }
+
+    try {
+      if (navigator.share && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(window.location.href)
+        alert('Course link copied to clipboard!')
+      }
+    } catch (error) {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(window.location.href)
+        alert('Course link copied to clipboard!')
+      } catch (clipboardError) {
+        console.error('Failed to share or copy:', error, clipboardError)
+        alert('Unable to share. Please copy the URL manually.')
+      }
+    }
   }
 
   const handleNavigate = (page: string) => {
@@ -160,7 +212,20 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
   const isEnrolled = !!enrollment
   const isPaid = course.price && Number(course.price) > 0
-  const progress = enrollment?.progress || 0
+
+  // Calculate real progress based on lesson completion
+  const calculateProgress = () => {
+    if (!progressData.length || !course?.lessons?.length) return 0
+    
+    const completedLessons = progressData.filter(p => p.progress?.percent === 100).length
+    const totalLessons = course.lessons.length
+    
+    return totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+  }
+
+  const progress = calculateProgress()
+
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -213,11 +278,12 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>~8 hours</span>
+                  <span>{course._count?.lessons ? `${course._count.lessons} lessons` : 'No lessons yet'}</span>
                 </div>
+
                 <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-current text-yellow-500" />
-                  <span>4.8 (124 reviews)</span>
+                  <Calendar className="h-4 w-4" />
+                  <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
 
@@ -238,60 +304,79 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
               )}
             </div>
 
-            {/* Course Preview Video */}
-            <Card className="mb-8 overflow-hidden">
-              <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative group cursor-pointer">
-                <button className="w-20 h-20 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center transition-colors group-hover:scale-110 duration-200">
-                  <Play className="w-8 h-8 text-primary-foreground ml-1" />
-                </button>
-                <div className="absolute bottom-4 left-4 bg-black/50 text-white px-2 py-1 rounded text-sm">
-                  Preview: Introduction to {course.title}
+
+
+            {/* First Lesson Preview Video */}
+            {course.lessons && course.lessons.length > 0 && course.lessons[0] && (
+              <Card className="mb-8 overflow-hidden">
+                <div className="p-4 bg-muted/30 border-b">
+                  <h3 className="font-medium text-foreground">Course Preview</h3>
+                  <p className="text-sm text-muted-foreground">{course.lessons[0].title}</p>
                 </div>
-              </div>
-            </Card>
+                <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative group cursor-pointer">
+                  <button 
+                    className="w-20 h-20 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center transition-colors group-hover:scale-110 duration-200"
+                    onClick={() => {
+                      if (isEnrolled) {
+                        router.push(`/course-player/${courseId}`)
+                      } else {
+                        alert('Please enroll in the course to watch lessons')
+                      }
+                    }}
+                  >
+                    <Play className="w-8 h-8 text-primary-foreground ml-1" />
+                  </button>
+                  <div className="absolute bottom-4 left-4 bg-black/50 text-white px-2 py-1 rounded text-sm">
+                    {isEnrolled ? 'Click to start course' : 'Enroll to watch'}
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* What You'll Learn */}
-            <Card className="p-6 mb-8">
-              <h3 className="text-xl font-semibold text-foreground mb-4">What you&apos;ll learn</h3>
-              <div className="grid md:grid-cols-2 gap-3">
-                {learningObjectives.map((objective, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-foreground">{objective}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
+            {course.description && (
+              <Card className="p-6 mb-8">
+                <h3 className="text-xl font-semibold text-foreground mb-4">About this course</h3>
+                <p className="text-foreground leading-relaxed">{course.description}</p>
+              </Card>
+            )}
 
             {/* Course Content */}
-            <Card className="p-6 mb-8">
-              <h3 className="text-xl font-semibold text-foreground mb-4">Course Content</h3>
-              <div className="space-y-4">
-                {courseModules.map((module: any, idx: number) => (
-                  <div key={idx} className="border border-border rounded-lg">
-                    <div className="p-4 bg-muted/30">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-foreground">{module.title}</h4>
-                        <span className="text-sm text-muted-foreground">
-                          {module.lessons.length} lessons • {module.duration}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      {module.lessons.map((lesson: any, lessonIdx: number) => (
-                        <div key={lessonIdx} className="flex items-center justify-between py-2">
-                          <div className="flex items-center gap-3">
+            {course.lessons && course.lessons.length > 0 && (
+              <Card className="p-6 mb-8">
+                <h3 className="text-xl font-semibold text-foreground mb-4">Course Content</h3>
+                <div className="space-y-2">
+                  {course.lessons.map((lesson: any, idx: number) => {
+                    const lessonProgress = progressData.find(p => p.lessonId === lesson.id)
+                    const isCompleted = lessonProgress?.progress?.percent === 100
+                    const progressPercent = lessonProgress?.progress?.percent || 0
+                    
+                    return (
+                      <div key={lesson.id} className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground font-mono">
+                            {String(lesson.order || idx + 1).padStart(2, '0')}
+                          </span>
+                          {isCompleted ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : (
                             <Play className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-foreground">{lesson.title}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">{lesson.duration}</span>
+                          )}
+                          <span className={`text-sm ${isCompleted ? 'text-green-600' : 'text-foreground'}`}>
+                            {lesson.title}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                        {isEnrolled && progressPercent > 0 && progressPercent < 100 && (
+                          <span className="text-xs text-muted-foreground">
+                            {progressPercent}%
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </Card>
+            )}
 
             {/* Instructor */}
             <Card className="p-6">
@@ -307,11 +392,10 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                     {course.createdBy?.name || "Instructor"}
                   </h4>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Senior Developer & Educator
+                    Course Creator
                   </p>
                   <p className="text-sm text-foreground">
-                    Experienced developer with 10+ years in web development.
-                    Passionate about teaching and helping students achieve their goals.
+                    Created {new Date(course.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -364,16 +448,25 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                   </Button>
                 )}
 
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 gap-2">
-                    <Heart className="h-4 w-4" />
-                    Save
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1 gap-2">
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </Button>
-                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full gap-2"
+                  onClick={handleShare}
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share Course
+                </Button>
+                
+                {/* Offline Download - Only for enrolled students */}
+                {isEnrolled && (
+                  <div className="pt-3">
+                    <CourseDownload 
+                      courseId={courseId}
+                      courseName={course.title}
+                    />
+                  </div>
+                )}
               </div>
 
               <Separator className="mb-6" />
@@ -383,21 +476,31 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                 <h4 className="font-semibold text-foreground">This course includes:</h4>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-3">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>8 hours on-demand video</span>
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <span>{course._count?.lessons || 0} lessons</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Download className="h-4 w-4 text-muted-foreground" />
-                    <span>Downloadable resources</span>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span>{course._count?.enrollments || 0} students enrolled</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Globe className="h-4 w-4 text-muted-foreground" />
                     <span>Access on mobile and desktop</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Award className="h-4 w-4 text-muted-foreground" />
-                    <span>Certificate of completion</span>
+                    {isOnline ? (
+                      <Wifi className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <WifiOff className="h-4 w-4 text-yellow-600" />
+                    )}
+                    <span>Offline access available</span>
                   </div>
+                  {isEnrolled && (
+                    <div className="flex items-center gap-3">
+                      <Download className="h-4 w-4 text-muted-foreground" />
+                      <span>Downloadable for offline use</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>Lifetime access</span>
@@ -407,26 +510,34 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
             </Card>
 
             {/* Related Courses */}
-            <Card className="p-6">
-              <h4 className="font-semibold text-foreground mb-4">Related Courses</h4>
-              <div className="space-y-4">
-                {relatedCourses.map((relatedCourse: any, idx: number) => (
-                  <div key={idx} className="flex gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors">
-                    <div className="w-16 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded flex items-center justify-center flex-shrink-0">
-                      <BookOpen className="h-4 w-4 text-primary" />
+            {relatedCourses.length > 0 && (
+              <Card className="p-6">
+                <h4 className="font-semibold text-foreground mb-4">Related Courses</h4>
+                <div className="space-y-4">
+                  {relatedCourses.map((relatedCourse: any) => (
+                    <div 
+                      key={relatedCourse.id} 
+                      className="flex gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                      onClick={() => router.push(`/courses/${relatedCourse.id}`)}
+                    >
+                      <div className="w-16 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="font-medium text-foreground text-sm line-clamp-2">
+                          {relatedCourse.title}
+                        </h5>
+                        <p className="text-xs text-muted-foreground">
+                          {relatedCourse.price && Number(relatedCourse.price) > 0 
+                            ? `₹${Number(relatedCourse.price).toLocaleString()}` 
+                            : "Free"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h5 className="font-medium text-foreground text-sm line-clamp-2">
-                        {relatedCourse.title}
-                      </h5>
-                      <p className="text-xs text-muted-foreground">
-                        {relatedCourse.price > 0 ? `₹${relatedCourse.price}` : "Free"}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                  ))}
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       </main>
@@ -434,57 +545,3 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
   )
 }
 
-// Mock data - replace with actual data from your API
-const learningObjectives = [
-  "Build responsive websites using HTML, CSS, and JavaScript",
-  "Understand modern web development best practices",
-  "Create interactive user interfaces",
-  "Work with APIs and handle data",
-  "Deploy applications to production",
-  "Debug and troubleshoot web applications"
-]
-
-const courseModules = [
-  {
-    title: "Getting Started",
-    duration: "2 hours",
-    lessons: [
-      { title: "Introduction to the Course", duration: "5:30" },
-      { title: "Setting up Development Environment", duration: "12:45" },
-      { title: "Your First Project", duration: "18:20" }
-    ]
-  },
-  {
-    title: "Core Concepts",
-    duration: "3 hours",
-    lessons: [
-      { title: "Understanding the Fundamentals", duration: "22:15" },
-      { title: "Working with Data", duration: "16:40" },
-      { title: "Best Practices", duration: "14:30" }
-    ]
-  },
-  {
-    title: "Advanced Topics",
-    duration: "3 hours",
-    lessons: [
-      { title: "Advanced Techniques", duration: "25:10" },
-      { title: "Performance Optimization", duration: "19:45" },
-      { title: "Final Project", duration: "28:30" }
-    ]
-  }
-]
-
-const relatedCourses = [
-  {
-    title: "Advanced Web Development",
-    price: 2999
-  },
-  {
-    title: "JavaScript Fundamentals",
-    price: 0
-  },
-  {
-    title: "React for Beginners",
-    price: 1999
-  }
-]

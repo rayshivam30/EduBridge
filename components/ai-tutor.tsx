@@ -3,13 +3,17 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Send, Plus, Lightbulb, BookOpen, HelpCircle, MessageCircle, Zap, Loader2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Send, Plus, Lightbulb, BookOpen, HelpCircle, MessageCircle, Zap, Loader2, Wifi, WifiOff, Clock } from "lucide-react"
+import { useOffline } from "@/hooks/use-offline"
+import { offlineManager } from "@/lib/offline-manager"
 
 interface Message {
   id: number
   role: "user" | "assistant"
   content: string
   timestamp: Date
+  cached?: boolean
 }
 
 interface AITutorProps {
@@ -23,6 +27,7 @@ export function AITutor({ onNavigate }: AITutorProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [recentChats, setRecentChats] = useState<Array<{title: string, date: string, messages: Message[]}>>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { isOnline } = useOffline()
 
   // Initialize messages based on selected mode
   useEffect(() => {
@@ -59,46 +64,68 @@ export function AITutor({ onNavigate }: AITutorProps) {
       
       const updatedMessages = [...messages, userMessage]
       setMessages(updatedMessages)
+      const currentInput = inputValue.trim()
       setInputValue("")
       setIsLoading(true)
 
       try {
-        // Prepare messages for API (convert to the format expected by the API)
-        const apiMessages = updatedMessages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }))
+        let aiResponseContent = ""
+        let cached = false
 
-        const response = await fetch('/api/ai-tutor', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: apiMessages,
-            mode: selectedMode
-          }),
-        })
+        // Try offline cache first
+        const cachedResponse = await offlineManager.getCachedAIResponse(currentInput)
+        
+        if (cachedResponse) {
+          aiResponseContent = cachedResponse
+          cached = true
+        } else if (isOnline) {
+          // Try online API
+          const apiMessages = updatedMessages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
 
-        if (!response.ok) {
-          throw new Error('Failed to get AI response')
+          const response = await fetch('/api/ai-tutor', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: apiMessages,
+              mode: selectedMode
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to get AI response')
+          }
+
+          const data = await response.json()
+          aiResponseContent = data.message
+          
+          // Cache the response for offline use
+          await offlineManager.cacheAIResponse(currentInput, aiResponseContent)
+        } else {
+          // Offline with no cache
+          aiResponseContent = "I'm currently offline and don't have a cached response for that question. Please try again when you're back online, or ask something I might have answered before."
         }
-
-        const data = await response.json()
         
         const aiResponse: Message = {
           id: Date.now() + 1,
           role: "assistant",
-          content: data.message,
+          content: aiResponseContent,
           timestamp: new Date(),
+          cached
         }
         
         setMessages(prev => [...prev, aiResponse])
       } catch (error) {
         console.error('Error getting AI response:', error)
-        let errorContent = "I'm sorry, I'm having trouble responding right now. Please try again in a moment."
+        let errorContent = "I'm sorry, I'm having trouble responding right now."
         
-        if (error instanceof Error) {
+        if (!isOnline) {
+          errorContent = "I'm currently offline and don't have a cached response for that question. Please try again when you're back online."
+        } else if (error instanceof Error) {
           if (error.message.includes('API key')) {
             errorContent = "It looks like the AI service isn't configured properly. Please contact your administrator."
           } else if (error.message.includes('Failed to fetch')) {
@@ -217,12 +244,28 @@ export function AITutor({ onNavigate }: AITutorProps) {
               {/* Mode Info */}
               <div className="mb-6 pb-6 border-b border-border">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground mb-2">
-                      {tutorModes.find((m) => m.id === selectedMode)?.name || "AI Tutor"}
-                    </h2>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="text-2xl font-bold text-foreground">
+                        {tutorModes.find((m) => m.id === selectedMode)?.name || "AI Tutor"}
+                      </h2>
+                      <Badge variant={isOnline ? "secondary" : "outline"}>
+                        {isOnline ? (
+                          <>
+                            <Wifi className="h-3 w-3 mr-1" />
+                            Online
+                          </>
+                        ) : (
+                          <>
+                            <WifiOff className="h-3 w-3 mr-1" />
+                            Offline
+                          </>
+                        )}
+                      </Badge>
+                    </div>
                     <p className="text-muted-foreground text-sm">
                       {tutorModes.find((m) => m.id === selectedMode)?.description}
+                      {!isOnline && " (Using cached responses when available)"}
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -247,11 +290,19 @@ export function AITutor({ onNavigate }: AITutorProps) {
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      <p
-                        className={`text-xs mt-2 ${message.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}
-                      >
-                        {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <p
+                          className={`text-xs ${message.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}
+                        >
+                          {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        {message.cached && (
+                          <Badge variant="secondary" className="text-xs py-0 px-1">
+                            <Clock className="h-2 w-2 mr-1" />
+                            Cached
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

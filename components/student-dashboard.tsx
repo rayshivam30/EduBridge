@@ -21,6 +21,8 @@ import { useRouter } from "next/navigation"
 import { GamificationDashboard } from "@/components/gamification/gamification-dashboard"
 import { PointsDisplay } from "@/components/gamification/points-display"
 import { StreakCounter } from "@/components/gamification/streak-counter"
+import { CourseDownload } from "@/components/course-download"
+import { useOffline } from "@/hooks/use-offline"
 
 interface StudentDashboardProps {
   onNavigate?: (page: string) => void
@@ -29,6 +31,7 @@ interface StudentDashboardProps {
 export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const { isOnline } = useOffline()
   const [enrollments, setEnrollments] = useState<any[] | null>(null)
   const [publicCourses, setPublicCourses] = useState<any[] | null>(null)
   const [dashboardStats, setDashboardStats] = useState<any | null>(null)
@@ -344,7 +347,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                         {course.level}
                       </span>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Progress</span>
                         <span className="text-foreground font-medium">{course.progress}%</span>
@@ -355,6 +358,10 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                           style={{ width: `${course.progress}%` }}
                         />
                       </div>
+                      <CourseDownload 
+                        courseId={course.id}
+                        courseName={course.title}
+                      />
                     </div>
                   </div>
                 ))

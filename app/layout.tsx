@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { SessionProvider } from "@/components/session-provider"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "sonner"
+
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration"
 import "./globals.css"
 
 const poppins = Poppins({
@@ -15,7 +17,13 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "EduBridge - Learn Anywhere. Anytime. Together.",
-  description: "Connecting rural and urban students with equal access to learning resources"
+  description: "Connecting rural and urban students with equal access to learning resources",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EduBridge"
+  }
 }
 
 export const viewport: Viewport = {
@@ -36,6 +44,7 @@ export default function RootLayout({
         <SessionProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
+            <ServiceWorkerRegistration />
             <Toaster />
             <Analytics />
           </ThemeProvider>

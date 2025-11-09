@@ -8,7 +8,11 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Plus } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Plus, Wifi, WifiOff, Clock } from "lucide-react"
+import { useOffline } from "@/hooks/use-offline"
+import { offlineManager } from "@/lib/offline-manager"
+import { toast } from "sonner"
 
 function pageToPath(page: string): string {
   switch (page) {
@@ -50,6 +54,20 @@ export default function CreateThreadPage() {
     newCategoryName: "",
     newCategoryDescription: ""
   })
+  const { isOnline } = useOffline()
+  const [userId, setUserId] = useState<string>("")
+
+  // Get user info for offline functionality
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(session => {
+        if (session?.user?.id) {
+          setUserId(session.user.id)
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -70,44 +88,38 @@ export default function CreateThreadPage() {
   const createThread = useCallback(async () => {
     // Validation
     if (!threadForm.title.trim()) {
-      alert("Please enter a thread title")
+      toast.error("Please enter a thread title")
       return
     }
     
     if (threadForm.title.trim().length < 3) {
-      alert("Thread title must be at least 3 characters long")
+      toast.error("Thread title must be at least 3 characters long")
       return
     }
 
     if (!threadForm.body.trim()) {
-      alert("Please enter thread content")
+      toast.error("Please enter thread content")
       return
     }
     
     if (threadForm.body.trim().length < 10) {
-      alert("Thread content must be at least 10 characters long")
+      toast.error("Thread content must be at least 10 characters long")
+      return
+    }
+
+    if (threadForm.categoryType === "new" && !isOnline) {
+      toast.error("Creating new categories requires an internet connection")
       return
     }
 
     if (threadForm.categoryType === "new") {
       if (!threadForm.newCategoryName.trim()) {
-        alert("Please provide a category name")
+        toast.error("Please provide a category name")
         return
       }
       
       if (threadForm.newCategoryName.trim().length < 3) {
-        alert("Category name must be at least 3 characters long")
-        return
-      }
-      
-      // Ensure description meets minimum requirement (will be auto-generated if empty)
-      const categoryName = threadForm.newCategoryName.trim()
-      const description = threadForm.newCategoryDescription.trim() || 
-        `Discussion category for ${categoryName}. Share knowledge, ask questions, and connect with others interested in ${categoryName}.`
-      
-      if (description.length < 10) {
-        // This shouldn't happen with auto-generation, but just in case
-        alert("Category description must be at least 10 characters long")
+        toast.error("Category name must be at least 3 characters long")
         return
       }
     }
@@ -116,8 +128,8 @@ export default function CreateThreadPage() {
     try {
       let courseId = threadForm.existingCategoryId === "general" ? undefined : threadForm.existingCategoryId
 
-      // If creating a new category, create the course first
-      if (threadForm.categoryType === "new") {
+      // If creating a new category, create the course first (online only)
+      if (threadForm.categoryType === "new" && isOnline) {
         const categoryName = threadForm.newCategoryName.trim()
         const categoryDescription = threadForm.newCategoryDescription.trim() || 
           `Discussion category for ${categoryName}. Share knowledge, ask questions, and connect with others interested in ${categoryName}.`
@@ -137,13 +149,8 @@ export default function CreateThreadPage() {
 
         if (!courseRes.ok) {
           const error = await courseRes.json().catch(() => ({ message: `HTTP ${courseRes.status}` }))
-          console.error("Course creation failed:", {
-            status: courseRes.status,
-            statusText: courseRes.statusText,
-            error
-          })
+          console.error("Course creation failed:", error)
           
-          // Handle validation errors specifically
           if (courseRes.status === 400 && error.details) {
             const validationErrors = error.details.map((err: any) => err.message).join(', ')
             throw new Error(`Category validation error: ${validationErrors}`)
@@ -156,33 +163,54 @@ export default function CreateThreadPage() {
         courseId = newCourse.id
       }
 
-      // Create the thread
-      const threadRes = await fetch("/api/forum/threads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      // Create the thread (online or offline)
+      if (isOnline) {
+        const threadRes = await fetch("/api/forum/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: threadForm.title.trim(),
+            body: threadForm.body.trim(),
+            courseId: (courseId && courseId !== "general") ? courseId : undefined
+          }),
+        })
+
+        if (!threadRes.ok) {
+          const error = await threadRes.json()
+          throw new Error(error.message || "Failed to create thread")
+        }
+
+        const newThread = await threadRes.json()
+        toast.success("Thread created successfully!")
+        
+        // Navigate to the new thread
+        router.push(`/community-forum/thread/${newThread.id}`)
+      } else {
+        // Create thread offline
+        if (!userId) {
+          throw new Error("User session not available for offline posting")
+        }
+
+        await offlineManager.createForumPost({
+          userId,
+          courseId: (courseId && courseId !== "general") ? courseId : undefined,
           title: threadForm.title.trim(),
-          body: threadForm.body.trim(),
-          courseId: (courseId && courseId !== "general") ? courseId : undefined
-        }),
-      })
+          content: threadForm.body.trim(),
+          createdAt: new Date()
+        })
 
-      if (!threadRes.ok) {
-        const error = await threadRes.json()
-        throw new Error(error.message || "Failed to create thread")
+        toast.success("Thread saved offline! It will be posted when you&apos;re back online.")
+        
+        // Navigate back to forum
+        router.push("/community-forum")
       }
-
-      const newThread = await threadRes.json()
-      
-      // Navigate to the new thread
-      router.push(`/community-forum/thread/${newThread.id}`)
     } catch (error) {
       console.error("Error creating thread:", error)
-      alert(error instanceof Error ? error.message : "Failed to create thread. Please try again.")
+      toast.error(error instanceof Error ? error.message : "Failed to create thread. Please try again.")
     } finally {
       setLoading(false)
     }
-  }, [threadForm, router])
+  }, [threadForm, router, isOnline, userId])
 
   return (
     <div className="min-h-screen bg-background">
@@ -197,8 +225,26 @@ export default function CreateThreadPage() {
             <ArrowLeft className="w-4 h-4" />
             Back to Forum
           </button>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Create New Thread</h1>
-          <p className="text-muted-foreground">Start a new discussion in the community</p>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold text-foreground">Create New Thread</h1>
+            <Badge variant={isOnline ? "secondary" : "outline"}>
+              {isOnline ? (
+                <>
+                  <Wifi className="h-3 w-3 mr-1" />
+                  Online
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-3 w-3 mr-1" />
+                  Offline
+                </>
+              )}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground">
+            Start a new discussion in the community
+            {!isOnline && " (Will be posted when you&apos;re back online)"}
+          </p>
         </div>
 
         <Card className="p-8">
@@ -245,8 +291,12 @@ export default function CreateThreadPage() {
                       checked={threadForm.categoryType === "new"}
                       onChange={(e) => setThreadForm(prev => ({ ...prev, categoryType: e.target.value }))}
                       className="text-primary"
+                      disabled={!isOnline}
                     />
-                    <span className="text-sm">Create new category</span>
+                    <span className={`text-sm ${!isOnline ? 'text-muted-foreground' : ''}`}>
+                      Create new category
+                      {!isOnline && " (Requires internet)"}
+                    </span>
                   </label>
                 </div>
 
@@ -296,7 +346,7 @@ export default function CreateThreadPage() {
                         {threadForm.newCategoryDescription.trim() ? 
                           `${threadForm.newCategoryDescription.length} characters` :
                           threadForm.newCategoryName.trim() ? 
-                            `Auto-generated: "Discussion category for ${threadForm.newCategoryName.trim()}. Share knowledge, ask questions, and connect with others interested in ${threadForm.newCategoryName.trim()}."` :
+                            `Auto-generated: &quot;Discussion category for ${threadForm.newCategoryName.trim()}. Share knowledge, ask questions, and connect with others interested in ${threadForm.newCategoryName.trim()}.&quot;` :
                             "Will be auto-generated based on category name"
                         }
                       </p>
@@ -355,6 +405,21 @@ export default function CreateThreadPage() {
                 ) : "Create Thread"}
               </Button>
             </div>
+
+            {/* Offline Warning */}
+            {!isOnline && (
+              <div className="text-sm bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-yellow-600" />
+                  <h4 className="font-medium text-yellow-800 dark:text-yellow-200">Offline Mode</h4>
+                </div>
+                <ul className="space-y-1 text-xs text-yellow-700 dark:text-yellow-300">
+                  <li>• Your thread will be saved locally and posted when you&apos;re back online</li>
+                  <li>• You can only use existing categories while offline</li>
+                  <li>• Creating new categories requires an internet connection</li>
+                </ul>
+              </div>
+            )}
 
             {/* Help Text */}
             <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">

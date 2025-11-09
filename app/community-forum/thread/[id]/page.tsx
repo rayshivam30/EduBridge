@@ -66,9 +66,9 @@ export default function ThreadPage() {
   const router = useRouter()
   const params = useParams()
   const threadId = params.id as string
-  
+
   const onNavigate = (page: string) => router.push(pageToPath(page))
-  
+
   const [loading, setLoading] = useState(false)
   const [threadDetail, setThreadDetail] = useState<Thread | null>(null)
   const [repliesData, setRepliesData] = useState<{ items: ThreadReply[]; page: number; pages: number; total: number } | null>(null)
@@ -78,6 +78,8 @@ export default function ThreadPage() {
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({})
   const [replyingTo, setReplyingTo] = useState<Record<string, string>>({}) // Track which reply is responding to which
   const [hoveredReply, setHoveredReply] = useState<string | null>(null) // Track hovered reply for highlighting
+  const [likedItems, setLikedItems] = useState<Set<string>>(new Set())
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({})
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -93,21 +95,21 @@ export default function ThreadPage() {
 
   const fetchThread = useCallback(async () => {
     if (!threadId) return
-    
+
     setLoading(true)
     try {
       const [tRes, rRes] = await Promise.all([
         fetch(`/api/forum/threads/${threadId}`, { cache: "no-store" }),
         fetch(`/api/forum/threads/${threadId}/replies?page=1`, { cache: "no-store" }),
       ])
-      
+
       if (!tRes.ok || !rRes.ok) {
         throw new Error(`Failed to fetch thread data: ${tRes.status} ${rRes.status}`)
       }
-      
+
       const thread = await tRes.json() as Thread
       const replies = await rRes.json() as { items: ThreadReply[]; total: number; page: number; pages: number }
-      
+
       setThreadDetail(thread)
       setRepliesData({
         items: replies.items || [],
@@ -127,7 +129,7 @@ export default function ThreadPage() {
   const postReply = useCallback(async (replyId?: string) => {
     const text = replyId ? replyTexts[replyId] : replyText
     if (!text?.trim()) return
-    
+
     setLoading(true)
     try {
       // Add threading information to the reply
@@ -138,18 +140,18 @@ export default function ThreadPage() {
           replyBody = `@${parentReply.author?.name || 'User'} ${replyBody}`
         }
       }
-      
+
       const postRes = await fetch(`/api/forum/threads/${threadId}/replies`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ body: replyBody }),
       })
-      
+
       if (!postRes.ok) {
         const error = await postRes.json()
         throw new Error(error.message || `Failed to post reply: ${postRes.status}`)
       }
-      
+
       // Clear the appropriate reply text
       if (replyId) {
         setReplyTexts(prev => ({ ...prev, [replyId]: "" }))
@@ -157,7 +159,7 @@ export default function ThreadPage() {
       } else {
         setReplyText("")
       }
-      
+
       // Refresh the replies after posting
       await fetchThread()
     } catch (error) {
@@ -173,7 +175,7 @@ export default function ThreadPage() {
       if (prev === replyId) return null
       return replyId
     })
-    
+
     // Track what this reply is responding to
     if (parentReplyId) {
       setReplyingTo(prev => ({ ...prev, [replyId]: parentReplyId }))
@@ -184,17 +186,96 @@ export default function ThreadPage() {
     setReplyTexts(prev => ({ ...prev, [replyId]: text }))
   }, [])
 
-  const handleLike = useCallback((type: 'thread' | 'reply', id: string) => {
-    console.log(`Liked ${type}:`, id)
-    // TODO: Implement actual like API call
-  }, [])
+  const handleLike = useCallback(async (type: 'thread' | 'reply', id: string) => {
+    try {
+      const isCurrentlyLiked = likedItems.has(id)
 
-  const handleShare = useCallback((type: 'thread' | 'reply', id: string) => {
-    console.log(`Shared ${type}:`, id)
-    // TODO: Implement actual share functionality
-  }, [])
+      // For now, implement client-side like functionality
+      // TODO: Implement proper database-backed likes later
+      const newLikedItems = new Set(likedItems)
+      if (isCurrentlyLiked) {
+        newLikedItems.delete(id)
+        setLikeCounts(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) - 1) }))
+      } else {
+        newLikedItems.add(id)
+        setLikeCounts(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }))
+      }
+      setLikedItems(newLikedItems)
 
+      // Store in localStorage for persistence
+      const storageKey = `forum_likes_${type}`
+      const existingLikes = JSON.parse(localStorage.getItem(storageKey) || '{}')
+      if (isCurrentlyLiked) {
+        delete existingLikes[id]
+      } else {
+        existingLikes[id] = true
+      }
+      localStorage.setItem(storageKey, JSON.stringify(existingLikes))
+
+      // Store counts in localStorage
+      const countsKey = `forum_like_counts`
+      const existingCounts = JSON.parse(localStorage.getItem(countsKey) || '{}')
+      existingCounts[id] = (existingCounts[id] || 0) + (isCurrentlyLiked ? -1 : 1)
+      if (existingCounts[id] <= 0) {
+        delete existingCounts[id]
+      }
+      localStorage.setItem(countsKey, JSON.stringify(existingCounts))
+
+    } catch (error) {
+      console.error('Error toggling like:', error)
+    }
+  }, [likedItems])
+
+  const handleShare = useCallback(async (type: 'thread' | 'reply', id: string) => {
+    const shareUrl = type === 'thread'
+      ? `${window.location.origin}/community-forum/thread/${id}`
+      : `${window.location.origin}/community-forum/thread/${threadId}#reply-${id}`
+
+    const shareData = {
+      title: type === 'thread' ? threadDetail?.title : 'Forum Reply',
+      text: type === 'thread'
+        ? `Check out this discussion: ${threadDetail?.title}`
+        : 'Check out this reply in the forum',
+      url: shareUrl
+    }
+
+    try {
+      if (navigator.share && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareUrl)
+        alert('Link copied to clipboard!')
+      }
+    } catch (error) {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl)
+        alert('Link copied to clipboard!')
+      } catch (clipboardError) {
+        console.error('Failed to share or copy:', error, clipboardError)
+        alert('Unable to share. Please copy the URL manually.')
+      }
+    }
+  }, [threadDetail?.title, threadId])
+
+  // Load likes from localStorage on mount
   useEffect(() => {
+    const loadLikes = () => {
+      try {
+        const threadLikes = JSON.parse(localStorage.getItem('forum_likes_thread') || '{}')
+        const replyLikes = JSON.parse(localStorage.getItem('forum_likes_reply') || '{}')
+        const counts = JSON.parse(localStorage.getItem('forum_like_counts') || '{}')
+
+        const allLikes = new Set([...Object.keys(threadLikes), ...Object.keys(replyLikes)])
+        setLikedItems(allLikes)
+        setLikeCounts(counts)
+      } catch (error) {
+        console.error('Error loading likes from localStorage:', error)
+      }
+    }
+
+    loadLikes()
     fetchThread()
     fetchCourses()
   }, [fetchThread, fetchCourses])
@@ -248,8 +329,8 @@ export default function ThreadPage() {
         {/* Thread Header */}
         <div className="mb-8">
           <span className="text-sm text-muted-foreground mb-2 inline-block">
-            {threadDetail.courseId ? 
-              courses.find(c => c.id === threadDetail.courseId)?.title || 'Course' : 
+            {threadDetail.courseId ?
+              courses.find(c => c.id === threadDetail.courseId)?.title || 'Course' :
               'General Discussion'
             }
           </span>
@@ -286,25 +367,30 @@ export default function ThreadPage() {
               </div>
               <p className="text-foreground leading-relaxed mb-4">{threadDetail.body}</p>
               <div className="flex gap-4 pt-4 border-t border-border">
-                <button 
+                <button
                   onClick={() => handleLike('thread', threadDetail.id)}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-red-500 transition-colors text-sm"
+                  className={`flex items-center gap-2 transition-colors text-sm ${likedItems.has(threadDetail.id)
+                      ? 'text-red-500 hover:text-red-600'
+                      : 'text-muted-foreground hover:text-red-500'
+                    }`}
                 >
-                  <Heart className="w-4 h-4" />
-                  <span>Like</span>
+                  <Heart className={`w-4 h-4 ${likedItems.has(threadDetail.id) ? 'fill-current' : ''}`} />
+                  <span>
+                    {likedItems.has(threadDetail.id) ? 'Liked' : 'Like'}
+                    {likeCounts[threadDetail.id] > 0 && ` (${likeCounts[threadDetail.id]})`}
+                  </span>
                 </button>
-                <button 
+                <button
                   onClick={() => toggleReplyForm("main")}
-                  className={`flex items-center gap-2 transition-colors text-sm ${
-                    showReplyForm === "main" 
-                      ? "text-primary" 
+                  className={`flex items-center gap-2 transition-colors text-sm ${showReplyForm === "main"
+                      ? "text-primary"
                       : "text-muted-foreground hover:text-primary"
-                  }`}
+                    }`}
                 >
                   <MessageCircle className="w-4 h-4" />
                   <span>Reply</span>
                 </button>
-                <button 
+                <button
                   onClick={() => handleShare('thread', threadDetail.id)}
                   className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 transition-colors text-sm"
                 >
@@ -329,14 +415,14 @@ export default function ThreadPage() {
                         className="text-sm border-0 bg-background"
                       />
                       <div className="flex gap-2 justify-end">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => setShowReplyForm(null)}
                         >
                           Cancel
                         </Button>
-                        <Button 
+                        <Button
                           size="sm"
                           onClick={() => postReply("main")}
                           disabled={loading || !(replyTexts["main"]?.trim())}
@@ -361,10 +447,10 @@ export default function ThreadPage() {
                 const isThreadedReply = reply.body.startsWith('@')
                 // For testing: make every second reply threaded to see the lines
                 const threadLevel = isThreadedReply || idx % 2 === 1 ? 1 : 0
-                
+
                 // Extract the mentioned user if it's a threaded reply
                 const mentionedUser = isThreadedReply ? reply.body.match(/@(\w+)/)?.[1] : 'TestUser'
-                
+
                 return (
                   <div key={reply.id ?? idx} className="relative">
                     {/* Debug indicator */}
@@ -382,18 +468,17 @@ export default function ThreadPage() {
                         <div className={`absolute left-3 top-7 w-3 h-3 rounded-full transition-colors duration-200 bg-red-500 z-10`}></div>
                       </>
                     )}
-                    
-                    <Card 
-                      className={`p-6 relative transition-all duration-200 ${
-                        threadLevel > 0 ? 'ml-10 border-l-2 border-l-primary/20 bg-primary/5' : ''
-                      } ${
-                        hoveredReply === reply.id ? 'ring-2 ring-primary/20 shadow-md' : ''
-                      }`}
+
+                    <Card
+                      id={`reply-${reply.id}`}
+                      className={`p-6 relative transition-all duration-200 ${threadLevel > 0 ? 'ml-10 border-l-2 border-l-primary/20 bg-primary/5' : ''
+                        } ${hoveredReply === reply.id ? 'ring-2 ring-primary/20 shadow-md' : ''
+                        }`}
                       onMouseEnter={() => setHoveredReply(reply.id)}
                       onMouseLeave={() => setHoveredReply(null)}
                     >
                       <div className="flex items-start gap-4 mb-4">
-                        
+
                         <Image
                           src={reply.author?.image || "/placeholder.svg"}
                           alt={reply.author?.name ?? "User"}
@@ -422,35 +507,40 @@ export default function ThreadPage() {
                         )}
                         <p>{reply.body}</p>
                       </div>
-                  
-                  {/* Reply Interaction Buttons */}
-                  <div className="flex gap-4 pt-3 border-t border-border">
-                    <button 
-                      onClick={() => handleLike('reply', reply.id)}
-                      className="flex items-center gap-2 text-muted-foreground hover:text-red-500 transition-colors text-xs"
-                    >
-                      <Heart className="w-3 h-3" />
-                      <span>Like</span>
-                    </button>
-                    <button 
-                      onClick={() => toggleReplyForm(`reply-${reply.id}`, reply.id)}
-                      className={`flex items-center gap-2 transition-colors text-xs ${
-                        showReplyForm === `reply-${reply.id}` 
-                          ? "text-primary" 
-                          : "text-muted-foreground hover:text-primary"
-                      }`}
-                    >
-                      <MessageCircle className="w-3 h-3" />
-                      <span>Reply</span>
-                    </button>
-                    <button 
-                      onClick={() => handleShare('reply', reply.id)}
-                      className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 transition-colors text-xs"
-                    >
-                      <Share2 className="w-3 h-3" />
-                      <span>Share</span>
-                    </button>
-                  </div>
+
+                      {/* Reply Interaction Buttons */}
+                      <div className="flex gap-4 pt-3 border-t border-border">
+                        <button
+                          onClick={() => handleLike('reply', reply.id)}
+                          className={`flex items-center gap-2 transition-colors text-xs ${likedItems.has(reply.id)
+                              ? 'text-red-500 hover:text-red-600'
+                              : 'text-muted-foreground hover:text-red-500'
+                            }`}
+                        >
+                          <Heart className={`w-3 h-3 ${likedItems.has(reply.id) ? 'fill-current' : ''}`} />
+                          <span>
+                            {likedItems.has(reply.id) ? 'Liked' : 'Like'}
+                            {likeCounts[reply.id] > 0 && ` (${likeCounts[reply.id]})`}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => toggleReplyForm(`reply-${reply.id}`, reply.id)}
+                          className={`flex items-center gap-2 transition-colors text-xs ${showReplyForm === `reply-${reply.id}`
+                              ? "text-primary"
+                              : "text-muted-foreground hover:text-primary"
+                            }`}
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                          <span>Reply</span>
+                        </button>
+                        <button
+                          onClick={() => handleShare('reply', reply.id)}
+                          className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 transition-colors text-xs"
+                        >
+                          <Share2 className="w-3 h-3" />
+                          <span>Share</span>
+                        </button>
+                      </div>
 
                       {/* Inline Reply Form for Each Reply */}
                       {showReplyForm === `reply-${reply.id}` && (
@@ -468,14 +558,14 @@ export default function ThreadPage() {
                                 className="text-sm border-0 bg-background"
                               />
                               <div className="flex gap-2 justify-end">
-                                <Button 
-                                  variant="outline" 
+                                <Button
+                                  variant="outline"
                                   size="sm"
                                   onClick={() => setShowReplyForm(null)}
                                 >
                                   Cancel
                                 </Button>
-                                <Button 
+                                <Button
                                   size="sm"
                                   onClick={() => postReply(`reply-${reply.id}`)}
                                   disabled={loading || !(replyTexts[`reply-${reply.id}`]?.trim())}
@@ -514,8 +604,8 @@ export default function ThreadPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground text-sm">Category</span>
                   <span className="font-semibold text-foreground text-sm">
-                    {threadDetail?.courseId ? 
-                      courses.find(c => c.id === threadDetail.courseId)?.title || 'Course' : 
+                    {threadDetail?.courseId ?
+                      courses.find(c => c.id === threadDetail.courseId)?.title || 'Course' :
                       'General'
                     }
                   </span>

@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { MessageCircle, Search, Plus, TrendingUp } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { MessageCircle, Search, Plus, TrendingUp, Wifi, WifiOff, Clock, Send } from "lucide-react"
+import { useOffline } from "@/hooks/use-offline"
+import { offlineManager } from "@/lib/offline-manager"
+import { toast } from "sonner"
 
 interface CommunityForumProps {
   onNavigate: (page: string) => void
@@ -19,27 +23,133 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
   const [loading, setLoading] = useState(false)
   const [threadsData, setThreadsData] = useState<{ items: Thread[]; page: number; pages: number; total: number } | null>(null)
   const [courses, setCourses] = useState<Course[]>([])
+  const { isOnline } = useOffline()
+  const [userId, setUserId] = useState<string>("")
+  const [userName, setUserName] = useState<string>("")
+
+  // Get user info for offline functionality
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(session => {
+        if (session?.user?.id) {
+          setUserId(session.user.id)
+          setUserName(session.user.name || 'User')
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   const refreshList = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams()
-      params.set("page", "1")
-      if (searchQuery.trim()) params.set("q", searchQuery.trim())
-      if (selectedCategory !== "all") params.set("courseId", selectedCategory)
-      const res = await fetch(`/api/forum/threads?${params.toString()}`, { cache: "no-store" })
-      if (!res.ok) {
-        throw new Error(`Failed to fetch threads: ${res.status}`)
+      if (isOnline) {
+        // If online, fetch fresh data first
+        try {
+          const params = new URLSearchParams()
+          params.set("page", "1")
+          if (searchQuery.trim()) params.set("q", searchQuery.trim())
+          if (selectedCategory !== "all") params.set("courseId", selectedCategory)
+          const res = await fetch(`/api/forum/threads?${params.toString()}`, { cache: "no-store" })
+          if (!res.ok) {
+            throw new Error(`Failed to fetch threads: ${res.status}`)
+          }
+          const json = await res.json()
+          setThreadsData(json)
+          
+          // Cache the fresh data for offline use (but don't create duplicates)
+          if (json.items && json.items.length > 0) {
+            // Clear existing cached posts for this category to avoid duplicates
+            try {
+              await offlineManager.clearCachedForumPosts(selectedCategory !== "all" ? selectedCategory : undefined)
+            } catch (clearError) {
+              console.warn('Failed to clear cached posts:', clearError)
+            }
+            
+            // Cache the new posts
+            for (const thread of json.items) {
+              try {
+                await offlineManager.createForumPost({
+                  userId: thread.author?.id || 'unknown',
+                  courseId: thread.course?.id || selectedCategory !== "all" ? selectedCategory : undefined,
+                  title: thread.title,
+                  content: thread.body || thread.content || '',
+                  createdAt: new Date(thread.createdAt)
+                })
+              } catch (cacheError) {
+                // Ignore cache errors for individual posts
+                console.warn('Failed to cache forum post:', cacheError)
+              }
+            }
+          }
+        } catch (fetchError) {
+          console.log('Failed to fetch fresh threads, falling back to cached data')
+          // Fall back to cached data if online fetch fails
+          const cachedPosts = await offlineManager.getCachedForumPosts(selectedCategory !== "all" ? selectedCategory : undefined)
+          
+          if (cachedPosts.length > 0) {
+            // Convert cached posts to thread format
+            const cachedThreads = cachedPosts.map(post => ({
+              id: post.id,
+              title: post.title,
+              body: post.content,
+              createdAt: post.createdAt.toISOString(),
+              author: { name: 'Cached User' }, // Simplified for cached posts
+              course: selectedCategory !== "all" ? { title: 'Course' } : null,
+              _count: { replies: post.replies?.length || 0 },
+              synced: post.synced
+            }))
+            
+            setThreadsData({
+              items: cachedThreads,
+              page: 1,
+              pages: 1,
+              total: cachedThreads.length
+            })
+          } else {
+            throw fetchError
+          }
+        }
+      } else {
+        // Offline mode - load cached data only
+        const cachedPosts = await offlineManager.getCachedForumPosts(selectedCategory !== "all" ? selectedCategory : undefined)
+        
+        if (cachedPosts.length > 0) {
+          // Convert cached posts to thread format
+          const cachedThreads = cachedPosts.map(post => ({
+            id: post.id,
+            title: post.title,
+            body: post.content,
+            createdAt: post.createdAt.toISOString(),
+            author: { name: 'Cached User' }, // Simplified for cached posts
+            course: selectedCategory !== "all" ? { title: 'Course' } : null,
+            _count: { replies: post.replies?.length || 0 },
+            synced: post.synced
+          }))
+          
+          setThreadsData({
+            items: cachedThreads,
+            page: 1,
+            pages: 1,
+            total: cachedThreads.length
+          })
+        } else {
+          // No cached data available
+          setThreadsData({
+            items: [],
+            page: 1,
+            pages: 1,
+            total: 0
+          })
+        }
       }
-      const json = await res.json()
-      setThreadsData(json)
     } catch (error) {
       console.error("Error fetching threads:", error)
       setThreadsData(null)
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, selectedCategory])
+  }, [searchQuery, selectedCategory, isOnline])
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -96,6 +206,7 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
     replies: number;
     timeAgo: string;
     lastActive: string;
+    synced: boolean;
   }
 
   const openThread = useCallback((id: string) => {
@@ -142,6 +253,7 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
         replies: t._count?.replies || 0,
         timeAgo,
         lastActive,
+        synced: (t as any).synced !== false, // Assume synced unless explicitly marked as false
       };
     });
   }, [threadsData, courses]);
@@ -175,8 +287,30 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Community Forum</h1>
-          <p className="text-muted-foreground">Connect with learners and experts worldwide</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-foreground">Community Forum</h1>
+                <Badge variant={isOnline ? "secondary" : "outline"}>
+                  {isOnline ? (
+                    <>
+                      <Wifi className="h-3 w-3 mr-1" />
+                      Online
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="h-3 w-3 mr-1" />
+                      Offline
+                    </>
+                  )}
+                </Badge>
+              </div>
+              <p className="text-muted-foreground">
+                Connect with learners and experts worldwide
+                {!isOnline && " (Viewing cached posts)"}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-4 gap-6">
@@ -190,6 +324,11 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
             >
               <Plus className="w-4 h-4" />
               New Thread
+              {!isOnline && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  Offline
+                </Badge>
+              )}
             </Button>
 
             {/* Thread Search */}
@@ -324,6 +463,12 @@ export function CommunityForum({ onNavigate }: CommunityForumProps) {
                           <span className="text-xs text-muted-foreground">by {thread.author}</span>
                           <span className="text-xs text-muted-foreground">•</span>
                           <span className="text-xs text-muted-foreground">{thread.timeAgo}</span>
+                          {!thread.synced && (
+                            <Badge variant="outline" className="text-xs py-0 px-1">
+                              <Clock className="h-2 w-2 mr-1" />
+                              Pending sync
+                            </Badge>
+                          )}
                         </div>
                         <h2 className="text-lg font-semibold text-foreground hover:text-primary transition-colors mb-2">
                           {thread.title}

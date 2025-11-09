@@ -4,13 +4,16 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { BookOpen, Search, Filter, ArrowRight } from "lucide-react"
+import { BookOpen, Search, Filter, ArrowRight, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "@/components/navigation"
+import { CourseDownload } from "@/components/course-download"
+import { useOffline } from "@/hooks/use-offline"
 
 export function CoursesClient() {
   const router = useRouter()
   const [courses, setCourses] = useState<any[]>([])
+  const [enrollments, setEnrollments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState({
@@ -18,29 +21,42 @@ export function CoursesClient() {
     category: "",
     sort: "newest"
   })
+  const { isOnline } = useOffline()
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch("/api/courses/public")
-        if (res.ok) {
-          const data = await res.json()
-          setCourses(Array.isArray(data) ? data : [])
+        // Fetch courses
+        const coursesRes = await fetch("/api/courses/public")
+        if (coursesRes.ok) {
+          const coursesData = await coursesRes.json()
+          setCourses(Array.isArray(coursesData) ? coursesData : [])
+        }
+
+        // Fetch user enrollments to check which courses are enrolled
+        const enrollmentsRes = await fetch("/api/enrollments")
+        if (enrollmentsRes.ok) {
+          const enrollmentsData = await enrollmentsRes.json()
+          setEnrollments(Array.isArray(enrollmentsData) ? enrollmentsData : [])
         }
       } catch (error) {
-        console.error("Failed to fetch courses:", error)
+        console.error("Failed to fetch data:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchCourses()
+    fetchData()
   }, [])
 
   const filteredCourses = courses.filter(course => 
     course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     course.description?.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const isEnrolledInCourse = (courseId: string) => {
+    return enrollments.some(enrollment => enrollment.courseId === courseId)
+  }
 
   const handleNavigate = (page: string) => {
     switch (page) {
@@ -129,19 +145,27 @@ export function CoursesClient() {
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {course.description || 'No description available'}
                   </p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">
-                      {course._count?.lessons || 0} lessons
-                    </span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="gap-1"
-                      onClick={() => router.push(`/courses/${course.id}`)}
-                    >
-                      View Course
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-muted-foreground">
+                        {course._count?.lessons || 0} lessons
+                      </span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="gap-1"
+                        onClick={() => router.push(`/courses/${course.id}`)}
+                      >
+                        View Course
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {isEnrolledInCourse(course.id) && (
+                      <CourseDownload 
+                        courseId={course.id}
+                        courseName={course.title}
+                      />
+                    )}
                   </div>
                 </div>
               </Card>

@@ -11,7 +11,7 @@ interface LandingPageProps {
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
   const router = useRouter()
-  
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -25,24 +25,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               <h1 className="text-2xl font-bold text-foreground">EduBridge</h1>
             </div>
             <nav className="hidden md:flex items-center gap-4">
-              <button
-                onClick={() => onNavigate("student-dashboard")}
-                className="text-foreground hover:text-primary transition-colors"
-              >
-                For Students
-              </button>
-              <button
-                onClick={() => onNavigate("teacher-dashboard")}
-                className="text-foreground hover:text-primary transition-colors"
-              >
-                For Teachers
-              </button>
-              <button
-                onClick={() => onNavigate("community-forum")}
-                className="text-foreground hover:text-primary transition-colors"
-              >
-                Community
-              </button>
               <div className="flex gap-2 ml-4">
                 <Button
                   variant="ghost"
