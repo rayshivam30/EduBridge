@@ -9,8 +9,6 @@ export function ServiceWorkerRegistration() {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          console.log('Service Worker registered successfully:', registration);
-          
           // Handle updates - silently in background
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
@@ -18,14 +16,13 @@ export function ServiceWorkerRegistration() {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   // New version available - update silently on next page load
-                  console.log('New version available - will update on next page load');
                 }
               });
             }
           });
         })
-        .catch((error) => {
-          console.error('Service Worker registration failed:', error);
+        .catch(() => {
+          // Service Worker registration failed - app will still work without offline features
         });
 
       // Handle service worker updates

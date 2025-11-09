@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "sonner"
 
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration"
+import { InstallPrompt } from "@/components/install-prompt"
 import "./globals.css"
 
 const poppins = Poppins({
@@ -45,6 +46,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
             <ServiceWorkerRegistration />
+            <InstallPrompt />
             <Toaster />
             <Analytics />
           </ThemeProvider>

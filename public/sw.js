@@ -113,9 +113,7 @@ self.addEventListener('sync', (event) => {
 // Handle background sync
 async function handleBackgroundSync() {
   try {
-    // This would sync any pending offline data
-    console.log('Background sync triggered');
-    
+    // Sync any pending offline data
     // In a real implementation, this would:
     // 1. Get pending data from IndexedDB
     // 2. Try to sync with server
@@ -123,7 +121,6 @@ async function handleBackgroundSync() {
     
     return Promise.resolve();
   } catch (error) {
-    console.error('Background sync failed:', error);
     return Promise.reject(error);
   }
 }
