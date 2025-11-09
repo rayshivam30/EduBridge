@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -43,6 +44,7 @@ interface Course {
 
 export default function CreateThreadPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const onNavigate = (page: string) => router.push(pageToPath(page))
   const [loading, setLoading] = useState(false)
   const [courses, setCourses] = useState<Course[]>([])
@@ -57,17 +59,21 @@ export default function CreateThreadPage() {
   const { isOnline } = useOffline()
   const [userId, setUserId] = useState<string>("")
 
-  // Get user info for offline functionality
+  // Authentication check
   useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(session => {
-        if (session?.user?.id) {
-          setUserId(session.user.id)
-        }
-      })
-      .catch(console.error)
-  }, [])
+    if (status === "loading") return // Still loading
+    
+    if (!session) {
+      // Redirect to login if not authenticated
+      router.push("/login")
+      return
+    }
+
+    // Set user ID for offline functionality
+    if (session?.user?.id) {
+      setUserId(session.user.id)
+    }
+  }, [session, status, router])
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -211,6 +217,20 @@ export default function CreateThreadPage() {
       setLoading(false)
     }
   }, [threadForm, router, isOnline, userId])
+
+  // Show loading while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    )
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!session) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-background">

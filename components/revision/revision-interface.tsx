@@ -269,7 +269,7 @@ export function RevisionInterface() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/student")}
+            onClick={() => router.push("/student-dashboard")}
             className="gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -533,7 +533,7 @@ export function RevisionInterface() {
                 <Brain className="w-4 h-4" />
                 Try Another Topic
               </Button>
-              <Button onClick={() => router.push("/student")} className="gap-2">
+              <Button onClick={() => router.push("/student-dashboard")} className="gap-2">
                 <ArrowLeft className="w-4 h-4" />
                 Back to Dashboard
               </Button>

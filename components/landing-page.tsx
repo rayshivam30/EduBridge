@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowRight, Users, BookOpen, Zap, Globe, Award } from "lucide-react"
+import { ManualInstall } from "./manual-install"
 
 interface LandingPageProps {
   onNavigate: (page: string) => void
@@ -26,6 +27,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </div>
             <nav className="hidden md:flex items-center gap-4">
               <div className="flex gap-2 ml-4">
+                <ManualInstall/>
                 <Button
                   variant="ghost"
                   onClick={() => router.push("/login")}
@@ -115,7 +117,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               size="lg"
               variant="outline"
               onClick={() => onNavigate("teacher-dashboard")}
-              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
+              className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
             >
               Become a Teacher
             </Button>

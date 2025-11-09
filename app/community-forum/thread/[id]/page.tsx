@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
+import { useSession } from "next-auth/react"
 import Image from "next/image"
 import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
@@ -65,9 +66,21 @@ interface Course {
 export default function ThreadPage() {
   const router = useRouter()
   const params = useParams()
+  const { data: session, status } = useSession()
   const threadId = params.id as string
 
   const onNavigate = (page: string) => router.push(pageToPath(page))
+
+  // Authentication check
+  useEffect(() => {
+    if (status === "loading") return // Still loading
+    
+    if (!session) {
+      // Redirect to login if not authenticated
+      router.push("/login")
+      return
+    }
+  }, [session, status, router])
 
   const [loading, setLoading] = useState(false)
   const [threadDetail, setThreadDetail] = useState<Thread | null>(null)
@@ -279,6 +292,20 @@ export default function ThreadPage() {
     fetchThread()
     fetchCourses()
   }, [fetchThread, fetchCourses])
+
+  // Show loading while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    )
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!session) {
+    return null
+  }
 
   if (loading && !threadDetail) {
     return (

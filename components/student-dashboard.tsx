@@ -452,7 +452,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
               >
                 <Users className="w-5 h-5" />
                 <div className="text-left">
-                  <div className="font-semibold">Join Community</div>
+                  <div className="font-semibold">Community</div>
                   <div className="text-xs opacity-90">Connect with other learners</div>
                 </div>
               </Button>

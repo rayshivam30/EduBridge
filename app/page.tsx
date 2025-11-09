@@ -29,8 +29,8 @@ export default function Home() {
 
   const handleNavigate = (page: string) => {
     // Landing page buttons should go to login/signup for authentication
-    if (page === "student-dashboard" || page === "teacher-dashboard") {
-      // Redirect to signup page for new users
+    if (page === "student-dashboard" || page === "teacher-dashboard" || page === "community-forum") {
+      // Redirect to signup page for new users - these pages require authentication
       router.push("/signup")
       return
     }

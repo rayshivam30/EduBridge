@@ -1,30 +1,54 @@
+'use client'
+
 import { Suspense } from 'react'
-import { auth } from '@/lib/auth'
+import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import { QuizDashboard } from '@/components/quiz/quiz-dashboard'
+import { Navigation } from '@/components/navigation'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
-export default async function QuizPage() {
-  const session = await auth()
+export default function QuizPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [currentPage] = useState('quiz')
+
+  if (status === 'loading') {
+    return <div>Loading...</div>
+  }
 
   if (!session) {
     redirect('/login')
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            AI Quiz Generator
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Create and take AI-generated quizzes on any topic to test your knowledge and earn points!
-          </p>
-        </div>
+  const handleNavigate = (page: string) => {
+    if (page === 'student-dashboard') {
+      router.push('/student-dashboard')
+    } else if (page === 'teacher-dashboard') {
+      router.push('/teacher-dashboard')
+    } else if (page === 'landing') {
+      router.push('/')
+    }
+  }
 
-        <Suspense fallback={<div>Loading...</div>}>
-          <QuizDashboard />
-        </Suspense>
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation currentPage={currentPage} onNavigate={handleNavigate} />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              AI Quiz Generator
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Create and take AI-generated quizzes on any topic to test your knowledge and earn points!
+            </p>
+          </div>
+
+          <Suspense fallback={<div>Loading...</div>}>
+            <QuizDashboard />
+          </Suspense>
+        </div>
       </div>
     </div>
   )
