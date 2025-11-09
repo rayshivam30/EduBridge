@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react';
 import { offlineManager } from '@/lib/offline-manager';
 
 export function useOffline() {
-  const [isOnline, setIsOnline] = useState(true); // Default to online for SSR
+  const [isOnline, setIsOnline] = useState(() => {
+    // Initialize state properly for SSR
+    if (typeof window !== 'undefined') {
+      return navigator.onLine;
+    }
+    return true; // Default to online for SSR
+  });
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
 
   useEffect(() => {
-    // Set initial state on client side only
-    if (typeof window !== 'undefined') {
-      setIsOnline(navigator.onLine);
-    }
 
     const handleOnline = () => {
       setIsOnline(true);
