@@ -2,7 +2,7 @@ import { db, OfflineCourse, OfflineLesson, StudentProgress, QuizAttempt, ForumPo
 
 export class OfflineManager {
   private static instance: OfflineManager;
-  private isOnline: boolean = navigator.onLine;
+  private isOnline: boolean = true; // Default to online for SSR
   private syncInProgress: boolean = false;
 
   static getInstance(): OfflineManager {

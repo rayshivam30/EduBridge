@@ -6,14 +6,10 @@ export function useOffline() {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
 
   useEffect(() => {
-    // Set initial state on client side - moved to separate effect to avoid cascading renders
-    const setInitialOnlineState = () => {
-      if (typeof window !== 'undefined') {
-        setIsOnline(navigator.onLine);
-      }
-    };
-    
-    setInitialOnlineState();
+    // Set initial state on client side only
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
 
     const handleOnline = () => {
       setIsOnline(true);
