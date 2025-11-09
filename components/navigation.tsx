@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { signOut, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { BookOpen, Home, LogOut, User, Brain, Megaphone } from "lucide-react"
-import { ManualInstall } from "@/components/manual-install"
 
 interface NavigationProps {
   currentPage: string
@@ -54,7 +53,6 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
           </button>
 
           <div className="flex items-center gap-4">
-            <ManualInstall />
             <button
               onClick={() => onNavigate(getHomePage())}
               aria-label="Home"
