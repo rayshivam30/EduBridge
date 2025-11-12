@@ -352,7 +352,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 <>
                   {allCurrentCourses.length > 3 && (
                     <div className="text-xs text-muted-foreground mb-4 p-2 bg-muted/50 rounded-lg">
-                      Showing 3 of {allCurrentCourses.length} courses. Click "View All" to see more.
+                      Showing 3 of {allCurrentCourses.length} courses. Click &quot;View All&quot; to see more.
                     </div>
                   )}
                   {currentCourses.map((course: any, idx: number) => (

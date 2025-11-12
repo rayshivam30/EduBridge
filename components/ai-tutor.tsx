@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -113,6 +113,62 @@ export function AITutor({}: AITutorProps) {
     }
   }, [messages, selectedMode])
 
+  // Function to save current conversation to recent chats
+  const saveCurrentConversation = useCallback(() => {
+    try {
+      // Only save if there are user messages
+      if (messages.some(msg => msg.role === 'user')) {
+        const firstUserMessage = messages.find(msg => msg.role === 'user')?.content || 'New Chat';
+        const chatTitle = firstUserMessage.length > 30
+          ? firstUserMessage.substring(0, 30) + '...'
+          : firstUserMessage;
+
+        // Ensure messages are properly serializable
+        const serializableMessages = messages.map(msg => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp,
+          cached: msg.cached || false
+        }));
+
+        const newChat = {
+          title: chatTitle,
+          date: new Date().toLocaleDateString(),
+          messages: serializableMessages
+        };
+
+        // Check if this conversation already exists in recent chats
+        const existingChatIndex = recentChats.findIndex(chat =>
+          chat.title === chatTitle && chat.messages.length === serializableMessages.length
+        );
+
+        let updatedChats;
+        if (existingChatIndex >= 0) {
+          // Update existing chat
+          updatedChats = [...recentChats];
+          updatedChats[existingChatIndex] = newChat;
+        } else {
+          // Add new chat
+          updatedChats = [newChat, ...recentChats.slice(0, 4)]; // Keep only 5 recent chats
+        }
+
+        setRecentChats(updatedChats);
+
+        // Save to localStorage
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('ai-tutor-chats', JSON.stringify(updatedChats));
+          } catch (storageError) {
+            console.error('Failed to save chat to localStorage:', storageError);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error saving current conversation:', error);
+    }
+  }, [messages, recentChats]);
+
   // Save conversation before page unload (refresh/close)
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -126,7 +182,7 @@ export function AITutor({}: AITutorProps) {
         window.removeEventListener('beforeunload', handleBeforeUnload);
       };
     }
-  }, [messages, recentChats]) // Dependencies to ensure we have latest data
+  }, [messages, recentChats, saveCurrentConversation]) // Dependencies to ensure we have latest data
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -247,61 +303,7 @@ export function AITutor({}: AITutorProps) {
     }
   }
 
-  // Function to save current conversation to recent chats
-  const saveCurrentConversation = () => {
-    try {
-      // Only save if there are user messages
-      if (messages.some(msg => msg.role === 'user')) {
-        const firstUserMessage = messages.find(msg => msg.role === 'user')?.content || 'New Chat';
-        const chatTitle = firstUserMessage.length > 30
-          ? firstUserMessage.substring(0, 30) + '...'
-          : firstUserMessage;
 
-        // Ensure messages are properly serializable
-        const serializableMessages = messages.map(msg => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp,
-          cached: msg.cached || false
-        }));
-
-        const newChat = {
-          title: chatTitle,
-          date: new Date().toLocaleDateString(),
-          messages: serializableMessages
-        };
-
-        // Check if this conversation already exists in recent chats
-        const existingChatIndex = recentChats.findIndex(chat =>
-          chat.title === chatTitle && chat.messages.length === serializableMessages.length
-        );
-
-        let updatedChats;
-        if (existingChatIndex >= 0) {
-          // Update existing chat
-          updatedChats = [...recentChats];
-          updatedChats[existingChatIndex] = newChat;
-        } else {
-          // Add new chat
-          updatedChats = [newChat, ...recentChats.slice(0, 4)]; // Keep only 5 recent chats
-        }
-
-        setRecentChats(updatedChats);
-
-        // Save to localStorage
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem('ai-tutor-chats', JSON.stringify(updatedChats));
-          } catch (storageError) {
-            console.error('Failed to save chat to localStorage:', storageError);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error saving current conversation:', error);
-    }
-  };
 
   const loadChat = (chatMessages: Message[]) => {
     try {

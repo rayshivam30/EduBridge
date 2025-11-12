@@ -191,13 +191,8 @@ async function initializeDatabase(): Promise<EduBridgeDB> {
           }
         });
 
-        // Handle schema errors
-        dbInstance.on('error', (error) => {
-          console.error('Database error:', error);
-          if (error.message?.includes('SchemaError') || error.message?.includes('not indexed')) {
-            console.warn('Schema error detected, will attempt to fix on next operation');
-          }
-        });
+        // Note: Dexie doesn't have a global 'error' event
+        // Schema errors will be handled in individual operations
         
       } catch (error) {
         console.error('Failed to initialize offline database:', error);
