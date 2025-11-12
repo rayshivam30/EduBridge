@@ -96,8 +96,6 @@ EduBridge is a modern, offline-first learning platform that connects rural and u
    NEXTAUTH_URL="http://localhost:3000"
    
    # AI Services
-   GOOGLE_GENERATIVE_AI_API_KEY="your-gemini-key"
-   OPENAI_API_KEY="your-openai-key"
    GROQ_API_KEY="your-groq-key"
    
    # Cloudinary
