@@ -186,16 +186,16 @@ export function CreateAnnouncementDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
             {editingAnnouncement ? "Edit Announcement" : "Create New Announcement"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title" className="text-sm font-medium">Title *</Label>
             <Input
               id="title"
               value={title}
@@ -203,6 +203,7 @@ export function CreateAnnouncementDialog({
               placeholder="Enter announcement title..."
               maxLength={200}
               required
+              className="h-11"
             />
             <p className="text-xs text-muted-foreground">
               {title.length}/200 characters
@@ -210,15 +211,16 @@ export function CreateAnnouncementDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="content">Content *</Label>
+            <Label htmlFor="content" className="text-sm font-medium">Content *</Label>
             <Textarea
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write your announcement content..."
-              rows={6}
+              rows={4}
               maxLength={2000}
               required
+              className="resize-none min-h-[100px]"
             />
             <p className="text-xs text-muted-foreground">
               {content.length}/2000 characters
@@ -227,13 +229,13 @@ export function CreateAnnouncementDialog({
 
           {!courseId && (
             <div className="space-y-2">
-              <Label htmlFor="course">Course (Optional)</Label>
+              <Label htmlFor="course" className="text-sm font-medium">Course (Optional)</Label>
               <Select
                 value={selectedCourseId || "none"}
                 onValueChange={(value) => setSelectedCourseId(value === "none" ? "" : value)}
                 disabled={loadingCourses}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select a course (optional)" />
                 </SelectTrigger>
                 <SelectContent>
@@ -251,35 +253,38 @@ export function CreateAnnouncementDialog({
             </div>
           )}
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="isPublic"
-              checked={isPublic}
-              onCheckedChange={setIsPublic}
-            />
-            <Label htmlFor="isPublic" className="text-sm">
-              Make this announcement public
-            </Label>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isPublic"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+              />
+              <Label htmlFor="isPublic" className="text-sm font-medium">
+                Make this announcement public
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground pl-6">
+              {isPublic
+                ? "All students will see this announcement"
+                : selectedCourseId && selectedCourseId !== "none"
+                  ? "Only students enrolled in the selected course will see this"
+                  : "Only students enrolled in your courses will see this"
+              }
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {isPublic
-              ? "All students will see this announcement"
-              : selectedCourseId && selectedCourseId !== "none"
-                ? "Only students enrolled in the selected course will see this"
-                : "Only students enrolled in your courses will see this"
-            }
-          </p>
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
               {loading 
                 ? (editingAnnouncement ? "Updating..." : "Creating...") 
                 : (editingAnnouncement ? "Update Announcement" : "Create Announcement")

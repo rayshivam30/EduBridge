@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { Navigation } from "@/components/navigation"
 import { CourseDownload } from "@/components/course-download"
+import { LearningTimeTracker } from "@/components/learning-time-tracker"
 import { useOffline } from "@/hooks/use-offline"
 import { useOfflineProgress } from "@/hooks/use-offline-progress"
 
@@ -586,6 +587,17 @@ export function CoursePlayerClient({ course }: CoursePlayerClientProps) {
                 ))}
               </div>
             </Card>
+
+            {/* Learning Time Tracker */}
+            {currentLesson && (
+              <LearningTimeTracker
+                lessonId={currentLesson.id}
+                courseId={course.id}
+                autoStart={true}
+                showControls={true}
+                className="mb-4 sm:mb-6"
+              />
+            )}
 
             {/* Course Info */}
             <Card className="p-4 sm:p-6">

@@ -30,12 +30,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const serializedCourse = {
     ...course,
     price: course.price.toString(), // Convert Decimal to string
-    createdAt: course.createdAt.toISOString(),
-    updatedAt: course.updatedAt.toISOString(),
+    createdAt: course.createdAt instanceof Date ? course.createdAt.toISOString() : course.createdAt,
+    updatedAt: course.updatedAt instanceof Date ? course.updatedAt.toISOString() : course.updatedAt,
     lessons: course.lessons?.map((lesson: any) => ({
       ...lesson,
-      createdAt: lesson.createdAt.toISOString(),
-      updatedAt: lesson.updatedAt.toISOString(),
+      createdAt: lesson.createdAt instanceof Date ? lesson.createdAt.toISOString() : lesson.createdAt,
+      updatedAt: lesson.updatedAt instanceof Date ? lesson.updatedAt.toISOString() : lesson.updatedAt,
     })) || []
   }
 

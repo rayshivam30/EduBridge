@@ -77,11 +77,20 @@ export async function GET() {
     const avgProgress = activeCourses > 0 ? Math.round(totalProgress / activeCourses) : 0
     const totalLessonsCompleted = courseProgresses.reduce((sum, cp) => sum + cp.completedLessons, 0)
 
+    // Calculate total learning time from progress records
+    const totalTimeSpent = await prisma.progress.aggregate({
+      where: { userId: session.user.id },
+      _sum: { timeSpent: true }
+    })
+
+    const totalLearningHours = Math.round((totalTimeSpent._sum.timeSpent || 0) / 3600 * 100) / 100
+
     const stats = {
       activeCourses,
       completedCourses,
       avgProgress,
       totalLessonsCompleted,
+      totalLearningHours,
       courseProgresses
     }
 

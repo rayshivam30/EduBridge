@@ -49,7 +49,7 @@ export function AnnouncementsClient() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation currentPage="announcements" onNavigate={onNavigate} />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-4 sm:py-8">
         <Announcements autoOpenCreate={shouldOpenCreate} />
       </main>
     </div>

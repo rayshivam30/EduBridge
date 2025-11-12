@@ -48,6 +48,7 @@ model User {
   customQuizzes    CustomQuiz[]
   announcements    Announcement[]
   announcementLikes AnnouncementLike[]
+  learningSessions LearningSession[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -104,6 +105,7 @@ model Course {
   threads       Thread[]
   payments      Payment[]
   announcements Announcement[]
+  learningSessions LearningSession[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -129,6 +131,7 @@ model Lesson {
 
   course   Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   progress Progress[]
+  learningSessions LearningSession[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -159,6 +162,7 @@ model Progress {
   percent     Int       @default(0)
   completedAt DateTime?
   pointsEarned Int      @default(0)
+  timeSpent   Int       @default(0) // Total time spent in seconds
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
@@ -168,6 +172,29 @@ model Progress {
 
   @@unique([userId, lessonId])
   @@index([lessonId])
+}
+
+// New model to track daily learning sessions
+model LearningSession {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  String
+  courseId  String
+  startTime DateTime
+  endTime   DateTime?
+  duration  Int      @default(0) // Duration in seconds
+  date      DateTime // Date for aggregation (start of day)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([lessonId])
+  @@index([courseId])
 }
 
 model Thread {

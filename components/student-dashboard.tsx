@@ -31,11 +31,20 @@ interface StudentDashboardProps {
 export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const { isOnline } = useOffline()
+  const { } = useOffline() // Keep hook for potential future use
   const [enrollments, setEnrollments] = useState<any[] | null>(null)
   const [publicCourses, setPublicCourses] = useState<any[] | null>(null)
   const [dashboardStats, setDashboardStats] = useState<any | null>(null)
   const [gamificationStats, setGamificationStats] = useState<any | null>(null)
+  const [learningTimeData, setLearningTimeData] = useState<any[]>([
+    { day: "Mon", hours: 0 },
+    { day: "Tue", hours: 0 },
+    { day: "Wed", hours: 0 },
+    { day: "Thu", hours: 0 },
+    { day: "Fri", hours: 0 },
+    { day: "Sat", hours: 0 },
+    { day: "Sun", hours: 0 },
+  ])
 
   const loadGamificationStats = async () => {
     try {
@@ -76,6 +85,17 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
 
         // Load gamification stats
         await loadGamificationStats()
+
+        // Load learning time data
+        try {
+          const learningTimeRes = await fetch("/api/learning-time?days=7", { cache: "no-store" })
+          if (learningTimeRes.ok) {
+            const learningTimeData = await learningTimeRes.json()
+            setLearningTimeData(learningTimeData.dailyData || [])
+          }
+        } catch (error) {
+          console.error('Error loading learning time data:', error)
+        }
       } catch (error) {
         console.error("Error loading dashboard data:", error)
       } finally {
@@ -126,7 +146,8 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
       activeCourses: 0,
       completedCourses: 0,
       avgProgress: 0,
-      totalLessonsCompleted: 0
+      totalLessonsCompleted: 0,
+      totalLearningHours: 0
     }
 
     return [
@@ -143,15 +164,15 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
         color: "bg-secondary/10 text-secondary"
       },
       {
-        label: "Avg Progress",
-        value: `${stats.avgProgress}%`,
-        icon: TrendingUp,
+        label: "Learning Hours",
+        value: `${stats.totalLearningHours}h`,
+        icon: Clock,
         color: "bg-accent/10 text-accent"
       },
       {
         label: "Lessons Done",
         value: stats.totalLessonsCompleted.toString(),
-        icon: Clock,
+        icon: TrendingUp,
         color: "bg-primary/10 text-primary"
       },
     ]
@@ -192,16 +213,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
       }))
   }, [publicCourses, currentCourses])
 
-  // Mock learning time data - TODO: Replace with actual tracking
-  const learningTimeData = [
-    { day: "Mon", hours: 0 },
-    { day: "Tue", hours: 0 },
-    { day: "Wed", hours: 0 },
-    { day: "Thu", hours: 0 },
-    { day: "Fri", hours: 0 },
-    { day: "Sat", hours: 0 },
-    { day: "Sun", hours: 0 },
-  ]
+
 
   return (
     <div className="min-h-screen bg-background">

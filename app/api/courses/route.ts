@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redis } from "@/lib/redis"
 
-const COURSE_LIST_KEY = "courses:list:v1"
+const COURSE_LIST_KEY = "courses:list:v2"
 
 const courseInput = z.object({
   title: z.string().min(3),
@@ -33,20 +33,85 @@ export async function GET(request: Request) {
       include: {
         _count: { select: { lessons: true, enrollments: true } },
         createdBy: { select: { id: true, name: true, image: true } },
+        lessons: {
+          select: { 
+            id: true,
+            progress: {
+              select: { percent: true }
+            }
+          }
+        },
+        enrollments: {
+          select: { userId: true }
+        }
       },
     })
 
+    // Calculate average progress for each course
+    const coursesWithProgress = await Promise.all(data.map(async course => {
+      let averageProgress = 0
+      
+      if (course.lessons.length > 0 && course.enrollments.length > 0) {
+        // Get all progress records for this course
+        const allProgress = await prisma.progress.findMany({
+          where: {
+            lessonId: { in: course.lessons.map(l => l.id) },
+            userId: { in: course.enrollments.map(e => e.userId) }
+          },
+          select: {
+            userId: true,
+            lessonId: true,
+            percent: true
+          }
+        })
+        
+        // Group progress by user
+        const progressByUser = new Map<string, number[]>()
+        
+        course.enrollments.forEach(enrollment => {
+          const userProgress = course.lessons.map(lesson => {
+            const progress = allProgress.find(p => 
+              p.userId === enrollment.userId && p.lessonId === lesson.id
+            )
+            return progress ? progress.percent : 0
+          })
+          
+          progressByUser.set(enrollment.userId, userProgress)
+        })
+        
+        // Calculate average progress across all students
+        let totalProgressSum = 0
+        let studentCount = 0
+        
+        progressByUser.forEach(userProgress => {
+          const userAverage = userProgress.reduce((sum, percent) => sum + percent, 0) / userProgress.length
+          totalProgressSum += userAverage
+          studentCount++
+        })
+        
+        averageProgress = studentCount > 0 ? Math.round(totalProgressSum / studentCount) : 0
+      }
+      
+      // Remove the detailed progress data from the response
+      const { lessons, enrollments, ...courseData } = course
+      return {
+        ...courseData,
+        averageProgress,
+        _count: course._count
+      }
+    }))
+
     // For teacher requests (like announcement dialog), return in expected format
     if (isTeacherRequest) {
-      const courses = data.map(course => ({
+      const courses = coursesWithProgress.map(course => ({
         id: course.id,
         title: course.title
       }))
       return NextResponse.json({ courses })
     }
 
-    await redis.set(userCacheKey, data, { ex: 60 })
-    return NextResponse.json(data)
+    await redis.set(userCacheKey, coursesWithProgress, { ex: 60 })
+    return NextResponse.json(coursesWithProgress)
   } catch (e) {
     return NextResponse.json({ error: "Failed to fetch courses" }, { status: 500 })
   }

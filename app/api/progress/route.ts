@@ -11,6 +11,7 @@ const upsertSchema = z.object({
   lessonId: z.string(),
   percent: z.number().min(0).max(100),
   completedAt: z.string().datetime().optional(),
+  timeSpent: z.number().min(0).optional(),
 })
 
 export async function GET(req: Request) {
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
   const parsed = upsertSchema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
 
-  const { lessonId, percent, completedAt } = parsed.data
+  const { lessonId, percent, completedAt, timeSpent } = parsed.data
   const lesson = await prisma.lesson.findUnique({ where: { id: lessonId }, select: { courseId: true } })
   if (!lesson) return NextResponse.json({ error: "Lesson not found" }, { status: 404 })
 
@@ -61,14 +62,16 @@ export async function POST(req: Request) {
     update: { 
       percent, 
       completedAt: completedAt ? new Date(completedAt) : null,
-      pointsEarned: isNewCompletion ? POINTS.LESSON_COMPLETION : (existingProgress?.pointsEarned || 0)
+      pointsEarned: isNewCompletion ? POINTS.LESSON_COMPLETION : (existingProgress?.pointsEarned || 0),
+      ...(timeSpent !== undefined && { timeSpent: { increment: timeSpent } })
     },
     create: { 
       userId: session.user.id, 
       lessonId, 
       percent, 
       completedAt: completedAt ? new Date(completedAt) : null,
-      pointsEarned: isNewCompletion ? POINTS.LESSON_COMPLETION : 0
+      pointsEarned: isNewCompletion ? POINTS.LESSON_COMPLETION : 0,
+      timeSpent: timeSpent || 0
     },
   })
 
