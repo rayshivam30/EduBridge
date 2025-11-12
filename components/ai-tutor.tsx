@@ -346,8 +346,8 @@ export function AITutor({}: AITutorProps) {
                 key={mode.id}
                 onClick={() => setSelectedMode(mode.id)}
                 className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full transition-colors text-xs whitespace-nowrap font-medium ${selectedMode === mode.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground border border-border"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground border border-border"
                   }`}
               >
                 <mode.icon className="w-3 h-3 flex-shrink-0" />
@@ -385,8 +385,8 @@ export function AITutor({}: AITutorProps) {
               <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[85%] px-3 py-2 rounded-lg ${message.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-sm"
-                      : "bg-muted text-foreground rounded-bl-sm"
+                    ? "bg-primary text-primary-foreground rounded-br-sm"
+                    : "bg-muted text-foreground rounded-bl-sm"
                     }`}
                 >
                   <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
@@ -461,8 +461,8 @@ export function AITutor({}: AITutorProps) {
                       key={mode.id}
                       onClick={() => setSelectedMode(mode.id)}
                       className={`w-full text-left p-2.5 rounded-lg transition-colors text-sm ${selectedMode === mode.id
-                          ? "bg-primary/10 text-primary border border-primary/30"
-                          : "text-foreground hover:bg-muted border border-border"
+                        ? "bg-primary/10 text-primary border border-primary/30"
+                        : "text-foreground hover:bg-muted border border-border"
                         }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -543,8 +543,8 @@ export function AITutor({}: AITutorProps) {
                     <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                       <div
                         className={`max-w-[80%] px-3 py-2.5 rounded-lg ${message.role === "user"
-                            ? "bg-primary text-primary-foreground rounded-br-sm"
-                            : "bg-muted text-foreground rounded-bl-sm"
+                          ? "bg-primary text-primary-foreground rounded-br-sm"
+                          : "bg-muted text-foreground rounded-bl-sm"
                           }`}
                       >
                         <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>

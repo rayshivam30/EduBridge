@@ -88,7 +88,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
     const handleFocus = () => {
       loadGamificationStats()
     }
-    
+
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
   }, [])
@@ -215,12 +215,12 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
             {gamificationStats && (
               <div className="flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
-                <PointsDisplay 
-                  points={gamificationStats.totalPoints} 
+                <PointsDisplay
+                  points={gamificationStats.totalPoints}
                   level={gamificationStats.level}
                   variant="compact"
                 />
-                <StreakCounter 
+                <StreakCounter
                   currentStreak={gamificationStats.currentStreak}
                   longestStreak={gamificationStats.longestStreak}
                   variant="compact"
@@ -252,7 +252,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                   <p className="text-muted-foreground text-xs sm:text-sm">Tell us what you want to learn and get a customized path with course recommendations tailored just for you!</p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => router.push("/student/recommendations")}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm w-full sm:w-auto"
                 size="sm"
@@ -328,14 +328,14 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-foreground">Current Courses</h3>
               {allCurrentCourses.length > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="text-xs sm:text-sm"
                   onClick={() => router.push("/student/my-courses")}
                 >
                   <span className="hidden sm:inline">
-                    {allCurrentCourses.length > 3 ? `View All (${allCurrentCourses.length})` : 'Manage Courses'}
+                    {allCurrentCourses.length > 3 ? `View All (${allCurrentCourses.length})` : 'All Courses'}
                   </span>
                   <span className="sm:hidden">
                     {allCurrentCourses.length > 3 ? `All (${allCurrentCourses.length})` : 'All'}
@@ -356,41 +356,41 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                     </div>
                   )}
                   {currentCourses.map((course: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="border border-border rounded-lg p-3 sm:p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                    onClick={() => {
-                      const cid = (course as any).id as string | undefined
-                      if (cid) window.location.href = `/course-player/${cid}`
-                      else onNavigate?.("course-player")
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-3 gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-semibold text-foreground text-sm sm:text-base break-words">{course.title}</h4>
-                        <p className="text-xs sm:text-sm text-muted-foreground break-words">{course.instructor}</p>
+                    <div
+                      key={idx}
+                      className="border border-border rounded-lg p-3 sm:p-4 hover:border-primary/50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        const cid = (course as any).id as string | undefined
+                        if (cid) window.location.href = `/course-player/${cid}`
+                        else onNavigate?.("course-player")
+                      }}
+                    >
+                      <div className="flex items-start justify-between mb-3 gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-foreground text-sm sm:text-base break-words">{course.title}</h4>
+                          <p className="text-xs sm:text-sm text-muted-foreground break-words">{course.instructor}</p>
+                        </div>
+                        <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded flex-shrink-0">
+                          {course.level}
+                        </span>
                       </div>
-                      <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded flex-shrink-0">
-                        {course.level}
-                      </span>
-                    </div>
-                    <div className="space-y-2 sm:space-y-3">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="text-foreground font-medium">{course.progress}%</span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div
-                          className="bg-primary rounded-full h-2 transition-all"
-                          style={{ width: `${course.progress}%` }}
+                      <div className="space-y-2 sm:space-y-3">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="text-foreground font-medium">{course.progress}%</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className="bg-primary rounded-full h-2 transition-all"
+                            style={{ width: `${course.progress}%` }}
+                          />
+                        </div>
+                        <CourseDownload
+                          courseId={course.id}
+                          courseName={course.title}
                         />
                       </div>
-                      <CourseDownload 
-                        courseId={course.id}
-                        courseName={course.title}
-                      />
                     </div>
-                  </div>
                   ))}
                 </>
               ) : (

@@ -263,61 +263,62 @@ export function RevisionInterface() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push("/student-dashboard")}
-            className="gap-2"
+            className="gap-2 self-start"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
+            <span className="hidden sm:inline">Back to Dashboard</span>
+            <span className="sm:hidden">Back</span>
           </Button>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-              <Brain className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex-shrink-0">
+              <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Revision Session</h1>
-              <p className="text-muted-foreground">Explain what you learned and get AI feedback</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground break-words">Revision Session</h1>
+              <p className="text-sm sm:text-base text-muted-foreground break-words">Explain what you learned and get AI feedback</p>
             </div>
           </div>
         </div>
 
         {!feedback ? (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Topic Selection */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <BookOpen className="w-5 h-5" />
-                Select a Topic to Revise
+            <Card className="p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="break-words">Select a Topic to Revise</span>
               </h3>
-              <div className="grid gap-3">
+              <div className="grid gap-2 sm:gap-3">
                 {enrolledCourses.length > 0 ? (
                   enrolledCourses.map((enrollment) => (
                     <div
                       key={enrollment.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      className={`p-3 sm:p-4 border rounded-lg cursor-pointer transition-colors touch-manipulation ${
                         selectedTopic === enrollment.course?.title
                           ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
+                          : "border-border hover:border-primary/50 active:border-primary/70"
                       }`}
                       onClick={() => setSelectedTopic(enrollment.course?.title || "")}
                     >
-                      <h4 className="font-medium">{enrollment.course?.title}</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <h4 className="font-medium text-sm sm:text-base break-words">{enrollment.course?.title}</h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground break-words">
                         by {enrollment.course?.createdBy?.name}
                       </p>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No enrolled courses found. Enroll in a course first!</p>
+                  <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                    <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+                    <p className="text-sm sm:text-base mb-3 sm:mb-4">No enrolled courses found. Enroll in a course first!</p>
                     <Button
-                      className="mt-4"
+                      className="w-full sm:w-auto"
                       onClick={() => router.push("/courses")}
                     >
                       Browse Courses
@@ -329,30 +330,30 @@ export function RevisionInterface() {
 
             {/* Explanation Input */}
             {selectedTopic && (
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Mic className="w-5 h-5" />
-                  Explain What You Learned
+              <Card className="p-4 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                  <Mic className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <span className="break-words">Explain What You Learned</span>
                 </h3>
-                <p className="text-muted-foreground mb-4">
+                <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 break-words">
                   Tell us about &ldquo;{selectedTopic}&rdquo; - what are the key concepts, how does it work, 
                   and what did you find most interesting?
                 </p>
                 
                 {!microphoneSupported && (
-                  <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <div className="p-1 bg-orange-100 dark:bg-orange-900 rounded">
-                        <Mic className="w-4 h-4 text-orange-600" />
+                  <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <div className="p-1 bg-orange-100 dark:bg-orange-900 rounded flex-shrink-0">
+                        <Mic className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
                       </div>
-                      <div>
-                        <h4 className="font-medium text-orange-800 dark:text-orange-200 mb-1">
+                      <div className="min-w-0">
+                        <h4 className="font-medium text-orange-800 dark:text-orange-200 mb-1 text-sm sm:text-base">
                           Voice Recording Not Available
                         </h4>
-                        <p className="text-sm text-orange-700 dark:text-orange-300 mb-2">
+                        <p className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 mb-1 sm:mb-2 break-words">
                           Your browser doesn&apos;t support voice recording. You can still type your explanation below.
                         </p>
-                        <p className="text-xs text-orange-600 dark:text-orange-400">
+                        <p className="text-xs text-orange-600 dark:text-orange-400 break-words">
                           For voice recording, try using Chrome, Firefox, or Safari.
                         </p>
                       </div>
@@ -360,88 +361,92 @@ export function RevisionInterface() {
                   </div>
                 )}
                 
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div className="relative">
                     <Textarea
                       placeholder={isRecording ? "🎤 Recording... Speak clearly about your topic" : "Start typing your explanation here, or use the microphone to record..."}
                       value={explanation}
                       onChange={(e) => setExplanation(e.target.value)}
-                      className={`min-h-[200px] resize-none ${isRecording ? 'border-red-300 bg-red-50/50 dark:bg-red-950/20' : ''}`}
+                      className={`min-h-[150px] sm:min-h-[200px] resize-none text-sm sm:text-base ${isRecording ? 'border-red-300 bg-red-50/50 dark:bg-red-950/20' : ''}`}
                       disabled={isRecording}
                     />
                     {isRecording && (
-                      <div className="absolute top-3 right-3 flex items-center gap-2 text-red-600">
-                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-medium">Recording</span>
+                      <div className="absolute top-2 sm:top-3 right-2 sm:right-3 flex items-center gap-1 sm:gap-2 text-red-600">
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs sm:text-sm font-medium">Recording</span>
                       </div>
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                     <Button
                       variant={isRecording ? "destructive" : "outline"}
                       onClick={isRecording ? stopRecording : startRecording}
                       disabled={!microphoneSupported || isLoading}
-                      className="gap-2"
+                      className="gap-2 w-full sm:w-auto text-sm"
                       title={!microphoneSupported ? "Microphone not supported in this browser" : ""}
                     >
                       {isRecording ? (
                         <>
                           <MicOff className="w-4 h-4" />
-                          Stop Recording
+                          <span className="hidden sm:inline">Stop Recording</span>
+                          <span className="sm:hidden">Stop</span>
                         </>
                       ) : (
                         <>
                           <Mic className="w-4 h-4" />
-                          {microphoneSupported ? "Record Audio" : "Microphone Not Available"}
+                          <span className="hidden sm:inline">{microphoneSupported ? "Record Audio" : "Microphone Not Available"}</span>
+                          <span className="sm:hidden">{microphoneSupported ? "Record" : "No Mic"}</span>
                         </>
                       )}
                     </Button>
-                    
-                    {!microphoneSupported && (
-                      <p className="text-sm text-muted-foreground">
-                        Voice recording requires a modern browser. You can still type your explanation.
-                      </p>
-                    )}
                     
                     <Button
                       onClick={submitRevision}
                       disabled={!explanation.trim() || isLoading}
-                      className="gap-2"
+                      className="gap-2 w-full sm:w-auto text-sm"
                     >
                       {isLoading ? (
                         <>
                           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          Analyzing...
+                          <span className="hidden sm:inline">Analyzing...</span>
+                          <span className="sm:hidden">Analyzing</span>
                         </>
                       ) : (
                         <>
                           <Send className="w-4 h-4" />
-                          Get Feedback
+                          <span className="hidden sm:inline">Get Feedback</span>
+                          <span className="sm:hidden">Analyze</span>
                         </>
                       )}
                     </Button>
                   </div>
+                  
+                  {!microphoneSupported && (
+                    <p className="text-xs sm:text-sm text-muted-foreground break-words">
+                      Voice recording requires a modern browser. You can still type your explanation.
+                    </p>
+                  )}
                 </div>
               </Card>
             )}
           </div>
         ) : (
           /* Feedback Display */
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Overall Score */}
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Brain className="w-5 h-5" />
-                  Your Understanding Score
+            <Card className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-3 sm:mb-4">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <Brain className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <span className="break-words">Your Understanding Score</span>
                 </h3>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={isSpeaking ? stopSpeaking : () => speakText(feedback.encouragement)}
-                    className="gap-2"
+                    className="gap-2 text-sm"
                   >
                     {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                     {isSpeaking ? "Stop" : "Listen"}
@@ -449,29 +454,29 @@ export function RevisionInterface() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="flex-1">
-                  <Progress value={feedback.overallScore} className="h-3" />
+                  <Progress value={feedback.overallScore} className="h-2 sm:h-3" />
                 </div>
-                <span className="text-2xl font-bold text-primary">
+                <span className="text-xl sm:text-2xl font-bold text-primary flex-shrink-0">
                   {feedback.overallScore}%
                 </span>
               </div>
               
-              <p className="text-muted-foreground">{feedback.encouragement}</p>
+              <p className="text-sm sm:text-base text-muted-foreground break-words">{feedback.encouragement}</p>
             </Card>
 
             {/* Detailed Feedback */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {/* Correct Concepts */}
-              <Card className="p-6">
-                <h4 className="font-semibold mb-4 flex items-center gap-2 text-green-600">
-                  <CheckCircle className="w-5 h-5" />
-                  What You Got Right ({feedback.correctConcepts.length})
+              <Card className="p-4 sm:p-6">
+                <h4 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-green-600 text-sm sm:text-base">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <span className="break-words">What You Got Right ({feedback.correctConcepts.length})</span>
                 </h4>
-                <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {feedback.correctConcepts.map((concept, idx) => (
-                    <Badge key={idx} variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+                    <Badge key={idx} variant="secondary" className="bg-green-50 text-green-700 border-green-200 text-xs sm:text-sm break-words">
                       {concept}
                     </Badge>
                   ))}
@@ -479,14 +484,14 @@ export function RevisionInterface() {
               </Card>
 
               {/* Missing Concepts */}
-              <Card className="p-6">
-                <h4 className="font-semibold mb-4 flex items-center gap-2 text-orange-600">
-                  <Lightbulb className="w-5 h-5" />
-                  Areas to Explore More ({feedback.missingConcepts.length})
+              <Card className="p-4 sm:p-6">
+                <h4 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-orange-600 text-sm sm:text-base">
+                  <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <span className="break-words">Areas to Explore More ({feedback.missingConcepts.length})</span>
                 </h4>
-                <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {feedback.missingConcepts.map((concept, idx) => (
-                    <Badge key={idx} variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200">
+                    <Badge key={idx} variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200 text-xs sm:text-sm break-words">
                       {concept}
                     </Badge>
                   ))}
@@ -496,14 +501,14 @@ export function RevisionInterface() {
 
             {/* Incorrect Concepts */}
             {feedback.incorrectConcepts.length > 0 && (
-              <Card className="p-6">
-                <h4 className="font-semibold mb-4 flex items-center gap-2 text-red-600">
-                  <XCircle className="w-5 h-5" />
-                  Concepts to Review ({feedback.incorrectConcepts.length})
+              <Card className="p-4 sm:p-6">
+                <h4 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-red-600 text-sm sm:text-base">
+                  <XCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <span className="break-words">Concepts to Review ({feedback.incorrectConcepts.length})</span>
                 </h4>
-                <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {feedback.incorrectConcepts.map((concept, idx) => (
-                    <Badge key={idx} variant="secondary" className="bg-red-50 text-red-700 border-red-200">
+                    <Badge key={idx} variant="secondary" className="bg-red-50 text-red-700 border-red-200 text-xs sm:text-sm break-words">
                       {concept}
                     </Badge>
                   ))}
@@ -512,30 +517,32 @@ export function RevisionInterface() {
             )}
 
             {/* Suggestions */}
-            <Card className="p-6">
-              <h4 className="font-semibold mb-4 flex items-center gap-2">
-                <Lightbulb className="w-5 h-5" />
-                Suggestions for Improvement
+            <Card className="p-4 sm:p-6">
+              <h4 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+                <Lightbulb className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="break-words">Suggestions for Improvement</span>
               </h4>
-              <ul className="space-y-2">
+              <ul className="space-y-2 sm:space-y-3">
                 {feedback.suggestions.map((suggestion, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                    <span className="text-muted-foreground">{suggestion}</span>
+                  <li key={idx} className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary rounded-full mt-1.5 sm:mt-2 flex-shrink-0" />
+                    <span className="text-sm sm:text-base text-muted-foreground break-words">{suggestion}</span>
                   </li>
                 ))}
               </ul>
             </Card>
 
             {/* Actions */}
-            <div className="flex gap-4">
-              <Button onClick={resetRevision} variant="outline" className="gap-2">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <Button onClick={resetRevision} variant="outline" className="gap-2 w-full sm:w-auto text-sm">
                 <Brain className="w-4 h-4" />
-                Try Another Topic
+                <span className="hidden sm:inline">Try Another Topic</span>
+                <span className="sm:hidden">Try Another</span>
               </Button>
-              <Button onClick={() => router.push("/student-dashboard")} className="gap-2">
+              <Button onClick={() => router.push("/student-dashboard")} className="gap-2 w-full sm:w-auto text-sm">
                 <ArrowLeft className="w-4 h-4" />
-                Back to Dashboard
+                <span className="hidden sm:inline">Back to Dashboard</span>
+                <span className="sm:hidden">Dashboard</span>
               </Button>
             </div>
           </div>

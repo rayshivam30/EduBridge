@@ -74,7 +74,7 @@ export default function ThreadPage() {
   // Authentication check
   useEffect(() => {
     if (status === "loading") return // Still loading
-    
+
     if (!session) {
       // Redirect to login if not authenticated
       router.push("/login")
@@ -93,6 +93,8 @@ export default function ThreadPage() {
   const [hoveredReply, setHoveredReply] = useState<string | null>(null) // Track hovered reply for highlighting
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set())
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({})
+  const [relatedThreads, setRelatedThreads] = useState<Thread[]>([])
+  const [loadingRelated, setLoadingRelated] = useState(false)
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -105,6 +107,33 @@ export default function ThreadPage() {
       console.error("Error fetching courses:", error)
     }
   }, [])
+
+  const fetchRelatedThreads = useCallback(async () => {
+    if (!threadDetail) return
+
+    setLoadingRelated(true)
+    try {
+      const params = new URLSearchParams()
+      params.set("limit", "5")
+      if (threadDetail.courseId) {
+        params.set("courseId", threadDetail.courseId)
+      }
+
+      const res = await fetch(`/api/forum/threads?${params.toString()}`, { cache: "no-store" })
+      if (res.ok) {
+        const data = await res.json()
+        // Filter out the current thread and limit to 5 results
+        const related = (data.items || [])
+          .filter((thread: Thread) => thread.id !== threadDetail.id)
+          .slice(0, 5)
+        setRelatedThreads(related)
+      }
+    } catch (error) {
+      console.error("Error fetching related threads:", error)
+    } finally {
+      setLoadingRelated(false)
+    }
+  }, [threadDetail])
 
   const fetchThread = useCallback(async () => {
     if (!threadId) return
@@ -293,6 +322,13 @@ export default function ThreadPage() {
     fetchCourses()
   }, [fetchThread, fetchCourses])
 
+  // Fetch related threads when thread details are loaded
+  useEffect(() => {
+    if (threadDetail) {
+      fetchRelatedThreads()
+    }
+  }, [threadDetail, fetchRelatedThreads])
+
   // Show loading while checking authentication
   if (status === "loading") {
     return (
@@ -341,311 +377,369 @@ export default function ThreadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Navigation currentPage="community-forum" onNavigate={onNavigate} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <button
-          onClick={() => router.push("/community-forum")}
-          className="text-primary hover:text-primary/80 mb-6 flex items-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Forum
-        </button>
+      <div className="max-w-none lg:max-w-[95vw] xl:max-w-[90vw] mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 flex-1 flex flex-col overflow-hidden">
+        {/* Header Section - Fixed */}
+        <div className="flex-shrink-0 mb-4 sm:mb-6">
+          {/* Back Button */}
+          <button
+            onClick={() => router.push("/community-forum")}
+            className="text-primary hover:text-primary/80 mb-3 sm:mb-4 flex items-center gap-2 touch-manipulation"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm sm:text-base">Back to Forum</span>
+          </button>
 
-        {/* Thread Header */}
-        <div className="mb-8">
-          <span className="text-sm text-muted-foreground mb-2 inline-block">
-            {threadDetail.courseId ?
-              courses.find(c => c.id === threadDetail.courseId)?.title || 'Course' :
-              'General Discussion'
-            }
-          </span>
-          <h1 className="text-3xl font-bold text-foreground">
-            {threadDetail.title}
-          </h1>
+          {/* Thread Header */}
+          <div>
+            <span className="text-xs sm:text-sm text-muted-foreground mb-2 inline-block break-words">
+              {threadDetail.courseId ?
+                courses.find(c => c.id === threadDetail.courseId)?.title || 'Course' :
+                'General Discussion'
+              }
+            </span>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground break-words">
+              {threadDetail.title}
+            </h1>
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            {/* Original Post */}
-            <Card className="p-6 mb-6">
-              <div className="flex items-start gap-4 mb-4">
-                <Image
-                  src={threadDetail.author?.image || "/placeholder.svg"}
-                  alt="User"
-                  className="w-12 h-12 rounded-full"
-                  width={48}
-                  height={48}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-foreground">
-                      {threadDetail.author?.name ?? "Anonymous"}
-                    </h3>
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                      Original Poster
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(threadDetail.createdAt ?? Date.now()).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              <p className="text-foreground leading-relaxed mb-4">{threadDetail.body}</p>
-              <div className="flex gap-4 pt-4 border-t border-border">
-                <button
-                  onClick={() => handleLike('thread', threadDetail.id)}
-                  className={`flex items-center gap-2 transition-colors text-sm ${likedItems.has(threadDetail.id)
-                      ? 'text-red-500 hover:text-red-600'
-                      : 'text-muted-foreground hover:text-red-500'
-                    }`}
-                >
-                  <Heart className={`w-4 h-4 ${likedItems.has(threadDetail.id) ? 'fill-current' : ''}`} />
-                  <span>
-                    {likedItems.has(threadDetail.id) ? 'Liked' : 'Like'}
-                    {likeCounts[threadDetail.id] > 0 && ` (${likeCounts[threadDetail.id]})`}
-                  </span>
-                </button>
-                <button
-                  onClick={() => toggleReplyForm("main")}
-                  className={`flex items-center gap-2 transition-colors text-sm ${showReplyForm === "main"
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-primary"
-                    }`}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Reply</span>
-                </button>
-                <button
-                  onClick={() => handleShare('thread', threadDetail.id)}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 transition-colors text-sm"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>Share</span>
-                </button>
-              </div>
-
-              {/* Inline Reply Form for Main Thread */}
-              {showReplyForm === "main" && (
-                <div className="mt-4 pt-4 border-t border-border bg-primary/5 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                      <MessageCircle className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex-1 space-y-3">
-                      <Textarea
-                        placeholder="Write your reply to this thread..."
-                        value={replyTexts["main"] || ""}
-                        onChange={(e) => updateReplyText("main", e.target.value)}
-                        rows={3}
-                        className="text-sm border-0 bg-background"
-                      />
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowReplyForm(null)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => postReply("main")}
-                          disabled={loading || !(replyTexts["main"]?.trim())}
-                          className="gap-2"
-                        >
-                          <Send className="w-3 h-3" />
-                          {loading ? "Posting..." : "Reply"}
-                        </Button>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 flex-1 min-h-0 overflow-hidden">
+          <div className="lg:col-span-3 flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+              <div className="pr-4 pb-4">
+                {/* Original Post */}
+                <Card className="p-4 sm:p-6 mb-4 sm:mb-6">
+                  <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                    <Image
+                      src={threadDetail.author?.image || "/placeholder.svg"}
+                      alt="User"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0"
+                      width={48}
+                      height={48}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                        <h3 className="font-semibold text-foreground text-sm sm:text-base break-words">
+                          {threadDetail.author?.name ?? "Anonymous"}
+                        </h3>
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded w-fit">
+                          Original Poster
+                        </span>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(threadDetail.createdAt ?? Date.now()).toLocaleString()}
+                      </p>
                     </div>
                   </div>
-                </div>
-              )}
-            </Card>
-
-            {/* Replies */}
-            <div className="space-y-4 relative">
-              {/* Test line - always visible */}
-              <div className="absolute left-0 top-0 w-2 h-20 bg-green-500 z-50"></div>
-              {(repliesData?.items ?? []).map((reply: any, idx: number) => {
-                // Check if this reply is threaded (mentions another user)
-                const isThreadedReply = reply.body.startsWith('@')
-                // For testing: make every second reply threaded to see the lines
-                const threadLevel = isThreadedReply || idx % 2 === 1 ? 1 : 0
-
-                // Extract the mentioned user if it's a threaded reply
-                const mentionedUser = isThreadedReply ? reply.body.match(/@(\w+)/)?.[1] : 'TestUser'
-
-                return (
-                  <div key={reply.id ?? idx} className="relative">
-                    {/* Debug indicator */}
-                    <div className="absolute top-2 right-2 text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded z-20">
-                      Level: {threadLevel}
-                    </div>
-                    {/* Threading Visual Elements */}
-                    {threadLevel > 0 && (
-                      <>
-                        {/* Vertical line connecting to parent */}
-                        <div className={`absolute left-4 top-0 w-1 h-8 transition-colors duration-200 bg-blue-500 z-10`}></div>
-                        {/* Horizontal connector */}
-                        <div className={`absolute left-4 top-8 w-8 h-1 transition-colors duration-200 bg-blue-500 z-10`}></div>
-                        {/* Corner connector dot */}
-                        <div className={`absolute left-3 top-7 w-3 h-3 rounded-full transition-colors duration-200 bg-red-500 z-10`}></div>
-                      </>
-                    )}
-
-                    <Card
-                      id={`reply-${reply.id}`}
-                      className={`p-6 relative transition-all duration-200 ${threadLevel > 0 ? 'ml-10 border-l-2 border-l-primary/20 bg-primary/5' : ''
-                        } ${hoveredReply === reply.id ? 'ring-2 ring-primary/20 shadow-md' : ''
+                  <p className="text-sm sm:text-base text-foreground leading-relaxed mb-3 sm:mb-4 break-words">{threadDetail.body}</p>
+                  <div className="flex flex-wrap gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-border">
+                    <button
+                      onClick={() => handleLike('thread', threadDetail.id)}
+                      className={`flex items-center gap-2 transition-colors text-xs sm:text-sm touch-manipulation ${likedItems.has(threadDetail.id)
+                        ? 'text-red-500 hover:text-red-600'
+                        : 'text-muted-foreground hover:text-red-500'
                         }`}
-                      onMouseEnter={() => setHoveredReply(reply.id)}
-                      onMouseLeave={() => setHoveredReply(null)}
                     >
-                      <div className="flex items-start gap-4 mb-4">
+                      <Heart className={`w-3 h-3 sm:w-4 sm:h-4 ${likedItems.has(threadDetail.id) ? 'fill-current' : ''}`} />
+                      <span className="break-words">
+                        {likedItems.has(threadDetail.id) ? 'Liked' : 'Like'}
+                        {likeCounts[threadDetail.id] > 0 && ` (${likeCounts[threadDetail.id]})`}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => toggleReplyForm("main")}
+                      className={`flex items-center gap-2 transition-colors text-xs sm:text-sm touch-manipulation ${showReplyForm === "main"
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-primary"
+                        }`}
+                    >
+                      <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span>Reply</span>
+                    </button>
+                    <button
+                      onClick={() => handleShare('thread', threadDetail.id)}
+                      className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 transition-colors text-xs sm:text-sm touch-manipulation"
+                    >
+                      <Share2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span>Share</span>
+                    </button>
+                  </div>
 
-                        <Image
-                          src={reply.author?.image || "/placeholder.svg"}
-                          alt={reply.author?.name ?? "User"}
-                          className="w-10 h-10 rounded-full"
-                          width={40}
-                          height={40}
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-foreground text-sm">{reply.author?.name ?? "User"}</h4>
-                            {threadLevel > 0 && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded flex items-center gap-1">
-                                <MessageCircle className="w-3 h-3" />
-                                {mentionedUser ? `Replying to @${mentionedUser}` : 'Threaded Reply'}
-                              </span>
-                            )}
+                  {/* Inline Reply Form for Main Thread */}
+                  {showReplyForm === "main" && (
+                    <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border bg-primary/5 rounded-lg p-3 sm:p-4">
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                          <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                        </div>
+                        <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
+                          <Textarea
+                            placeholder="Write your reply to this thread..."
+                            value={replyTexts["main"] || ""}
+                            onChange={(e) => updateReplyText("main", e.target.value)}
+                            rows={3}
+                            className="text-sm border-0 bg-background resize-none"
+                          />
+                          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowReplyForm(null)}
+                              className="w-full sm:w-auto text-sm"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => postReply("main")}
+                              disabled={loading || !(replyTexts["main"]?.trim())}
+                              className="gap-2 w-full sm:w-auto text-sm"
+                            >
+                              <Send className="w-3 h-3" />
+                              {loading ? "Posting..." : "Reply"}
+                            </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground">{new Date(reply.createdAt ?? Date.now()).toLocaleString()}</p>
                         </div>
                       </div>
-                      <div className="text-foreground text-sm leading-relaxed whitespace-pre-wrap mb-4">
-                        {threadLevel > 0 && mentionedUser && (
-                          <div className="mb-2 p-2 bg-muted/50 rounded-md border-l-2 border-primary/30">
-                            <p className="text-xs text-muted-foreground mb-1">Replying to @{mentionedUser}:</p>
-                          </div>
-                        )}
-                        <p>{reply.body}</p>
-                      </div>
+                    </div>
+                  )}
+                </Card>
 
-                      {/* Reply Interaction Buttons */}
-                      <div className="flex gap-4 pt-3 border-t border-border">
-                        <button
-                          onClick={() => handleLike('reply', reply.id)}
-                          className={`flex items-center gap-2 transition-colors text-xs ${likedItems.has(reply.id)
-                              ? 'text-red-500 hover:text-red-600'
-                              : 'text-muted-foreground hover:text-red-500'
-                            }`}
-                        >
-                          <Heart className={`w-3 h-3 ${likedItems.has(reply.id) ? 'fill-current' : ''}`} />
-                          <span>
-                            {likedItems.has(reply.id) ? 'Liked' : 'Like'}
-                            {likeCounts[reply.id] > 0 && ` (${likeCounts[reply.id]})`}
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => toggleReplyForm(`reply-${reply.id}`, reply.id)}
-                          className={`flex items-center gap-2 transition-colors text-xs ${showReplyForm === `reply-${reply.id}`
-                              ? "text-primary"
-                              : "text-muted-foreground hover:text-primary"
-                            }`}
-                        >
-                          <MessageCircle className="w-3 h-3" />
-                          <span>Reply</span>
-                        </button>
-                        <button
-                          onClick={() => handleShare('reply', reply.id)}
-                          className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 transition-colors text-xs"
-                        >
-                          <Share2 className="w-3 h-3" />
-                          <span>Share</span>
-                        </button>
-                      </div>
-
-                      {/* Inline Reply Form for Each Reply */}
-                      {showReplyForm === `reply-${reply.id}` && (
-                        <div className="mt-4 pt-4 border-t border-border bg-muted/20 rounded-lg p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                              <MessageCircle className="w-4 h-4 text-primary" />
+                {/* Replies */}
+                <div className="space-y-3 sm:space-y-4 relative">
+                  {/* Add test content to ensure scrolling works */}
+                  {(repliesData?.items ?? []).length === 0 && (
+                    <>
+                      {Array.from({ length: 15 }, (_, i) => (
+                        <Card key={`test-${i}`} className="p-4 sm:p-6">
+                          <div className="flex items-start gap-3 sm:gap-4 mb-3">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-muted flex-shrink-0"></div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-sm mb-1">Test User {i + 1}</h4>
+                              <p className="text-xs text-muted-foreground mb-2">Just now</p>
+                              <p className="text-sm">This is a test reply #{i + 1} to demonstrate scrolling functionality. The content should be long enough to show multiple replies and test the scroll behavior.</p>
                             </div>
-                            <div className="flex-1 space-y-3">
-                              <Textarea
-                                placeholder={`Reply to ${reply.author?.name ?? "User"}...`}
-                                value={replyTexts[`reply-${reply.id}`] || ""}
-                                onChange={(e) => updateReplyText(`reply-${reply.id}`, e.target.value)}
-                                rows={3}
-                                className="text-sm border-0 bg-background"
-                              />
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setShowReplyForm(null)}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => postReply(`reply-${reply.id}`)}
-                                  disabled={loading || !(replyTexts[`reply-${reply.id}`]?.trim())}
-                                  className="gap-2"
-                                >
-                                  <Send className="w-3 h-3" />
-                                  {loading ? "Posting..." : "Reply"}
-                                </Button>
+                          </div>
+                        </Card>
+                      ))}
+                    </>
+                  )}
+                  {(repliesData?.items ?? []).map((reply: any, idx: number) => {
+                    // Check if this reply is threaded (mentions another user)
+                    const isThreadedReply = reply.body.startsWith('@')
+                    // For testing: make every second reply threaded to see the lines
+                    const threadLevel = isThreadedReply || idx % 2 === 1 ? 1 : 0
+
+                    // Extract the mentioned user if it's a threaded reply
+                    const mentionedUser = isThreadedReply ? reply.body.match(/@(\w+)/)?.[1] : 'TestUser'
+
+                    return (
+                      <div key={reply.id ?? idx} className="relative">
+                        {/* Threading Visual Elements - Hidden on mobile for cleaner look */}
+                        {threadLevel > 0 && (
+                          <>
+                            {/* Vertical line connecting to parent */}
+                            <div className={`hidden sm:block absolute left-4 top-0 w-1 h-8 transition-colors duration-200 bg-primary/30 z-10`}></div>
+                            {/* Horizontal connector */}
+                            <div className={`hidden sm:block absolute left-4 top-8 w-8 h-1 transition-colors duration-200 bg-primary/30 z-10`}></div>
+                            {/* Corner connector dot */}
+                            <div className={`hidden sm:block absolute left-3 top-7 w-3 h-3 rounded-full transition-colors duration-200 bg-primary/50 z-10`}></div>
+                          </>
+                        )}
+
+                        <Card
+                          id={`reply-${reply.id}`}
+                          className={`p-4 sm:p-6 relative transition-all duration-200 ${threadLevel > 0 ? 'sm:ml-10 border-l-2 border-l-primary/20 bg-primary/5' : ''
+                            } ${hoveredReply === reply.id ? 'ring-2 ring-primary/20 shadow-md' : ''
+                            }`}
+                          onMouseEnter={() => setHoveredReply(reply.id)}
+                          onMouseLeave={() => setHoveredReply(null)}
+                        >
+                          <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                            <Image
+                              src={reply.author?.image || "/placeholder.svg"}
+                              alt={reply.author?.name ?? "User"}
+                              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
+                              width={40}
+                              height={40}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                                <h4 className="font-semibold text-foreground text-sm break-words">{reply.author?.name ?? "User"}</h4>
+                                {threadLevel > 0 && (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+                                    <MessageCircle className="w-3 h-3" />
+                                    <span className="hidden sm:inline">{mentionedUser ? `Replying to @${mentionedUser}` : 'Threaded Reply'}</span>
+                                    <span className="sm:hidden">Reply</span>
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">{new Date(reply.createdAt ?? Date.now()).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <div className="text-foreground text-sm leading-relaxed whitespace-pre-wrap mb-3 sm:mb-4">
+                            {threadLevel > 0 && mentionedUser && (
+                              <div className="mb-2 p-2 bg-muted/50 rounded-md border-l-2 border-primary/30">
+                                <p className="text-xs text-muted-foreground mb-1 break-words">Replying to @{mentionedUser}:</p>
+                              </div>
+                            )}
+                            <p className="break-words">{reply.body}</p>
+                          </div>
+
+                          {/* Reply Interaction Buttons */}
+                          <div className="flex flex-wrap gap-3 sm:gap-4 pt-3 border-t border-border">
+                            <button
+                              onClick={() => handleLike('reply', reply.id)}
+                              className={`flex items-center gap-2 transition-colors text-xs touch-manipulation ${likedItems.has(reply.id)
+                                ? 'text-red-500 hover:text-red-600'
+                                : 'text-muted-foreground hover:text-red-500'
+                                }`}
+                            >
+                              <Heart className={`w-3 h-3 ${likedItems.has(reply.id) ? 'fill-current' : ''}`} />
+                              <span className="break-words">
+                                {likedItems.has(reply.id) ? 'Liked' : 'Like'}
+                                {likeCounts[reply.id] > 0 && ` (${likeCounts[reply.id]})`}
+                              </span>
+                            </button>
+                            <button
+                              onClick={() => toggleReplyForm(`reply-${reply.id}`, reply.id)}
+                              className={`flex items-center gap-2 transition-colors text-xs touch-manipulation ${showReplyForm === `reply-${reply.id}`
+                                ? "text-primary"
+                                : "text-muted-foreground hover:text-primary"
+                                }`}
+                            >
+                              <MessageCircle className="w-3 h-3" />
+                              <span>Reply</span>
+                            </button>
+                            <button
+                              onClick={() => handleShare('reply', reply.id)}
+                              className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 transition-colors text-xs touch-manipulation"
+                            >
+                              <Share2 className="w-3 h-3" />
+                              <span>Share</span>
+                            </button>
+                          </div>
+
+                          {/* Inline Reply Form for Each Reply */}
+                          {showReplyForm === `reply-${reply.id}` && (
+                            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border bg-muted/20 rounded-lg p-3 sm:p-4">
+                              <div className="flex items-start gap-2 sm:gap-3">
+                                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+                                </div>
+                                <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
+                                  <Textarea
+                                    placeholder={`Reply to ${reply.author?.name ?? "User"}...`}
+                                    value={replyTexts[`reply-${reply.id}`] || ""}
+                                    onChange={(e) => updateReplyText(`reply-${reply.id}`, e.target.value)}
+                                    rows={3}
+                                    className="text-sm border-0 bg-background resize-none"
+                                  />
+                                  <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setShowReplyForm(null)}
+                                      className="w-full sm:w-auto text-sm"
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => postReply(`reply-${reply.id}`)}
+                                      disabled={loading || !(replyTexts[`reply-${reply.id}`]?.trim())}
+                                      className="gap-2 w-full sm:w-auto text-sm"
+                                    >
+                                      <Send className="w-3 h-3" />
+                                      {loading ? "Posting..." : "Reply"}
+                                    </Button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  </div>
-                )
-              })}
+                          )}
+                        </Card>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-4">
-            <Card className="p-6">
-              <h3 className="font-semibold text-foreground mb-4">Thread Stats</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Created</span>
-                  <span className="font-semibold text-foreground text-sm">
-                    {threadDetail?.createdAt ? new Date(threadDetail.createdAt).toLocaleDateString() : 'Recently'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Replies</span>
-                  <span className="font-semibold text-foreground">{threadDetail?._count?.replies ?? 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Category</span>
-                  <span className="font-semibold text-foreground text-sm">
-                    {threadDetail?.courseId ?
-                      courses.find(c => c.id === threadDetail.courseId)?.title || 'Course' :
-                      'General'
-                    }
-                  </span>
-                </div>
-              </div>
-            </Card>
+          {/* Sidebar - Hidden on mobile */}
+          <div className="hidden lg:flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+              <div className="space-y-3 sm:space-y-4 pr-4 pb-4">
+                <Card className="p-4 sm:p-6">
+                  <h3 className="font-semibold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">Thread Stats</h3>
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-xs sm:text-sm">Created</span>
+                      <span className="font-semibold text-foreground text-xs sm:text-sm break-words text-right">
+                        {threadDetail?.createdAt ? new Date(threadDetail.createdAt).toLocaleDateString() : 'Recently'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-xs sm:text-sm">Replies</span>
+                      <span className="font-semibold text-foreground text-xs sm:text-sm">{threadDetail?._count?.replies ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-xs sm:text-sm">Category</span>
+                      <span className="font-semibold text-foreground text-xs sm:text-sm break-words text-right max-w-[60%]">
+                        {threadDetail?.courseId ?
+                          courses.find(c => c.id === threadDetail.courseId)?.title || 'Course' :
+                          'General'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </Card>
 
-            <Card className="p-6">
-              <h3 className="font-semibold text-foreground mb-4">Related Threads</h3>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Related threads will appear here</p>
+                <Card className="p-4 sm:p-6">
+                  <h3 className="font-semibold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">Related Threads</h3>
+                  <div className="space-y-2">
+                    {loadingRelated ? (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      </div>
+                    ) : relatedThreads.length > 0 ? (
+                      relatedThreads.map((thread) => (
+                        <button
+                          key={thread.id}
+                          onClick={() => router.push(`/community-forum/thread/${thread.id}`)}
+                          className="w-full text-left p-3 rounded-lg hover:bg-muted/50 transition-colors touch-manipulation"
+                        >
+                          <h4 className="font-medium text-sm text-foreground line-clamp-2 break-words mb-1">
+                            {thread.title}
+                          </h4>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>by {thread.author?.name || 'Anonymous'}</span>
+                            <span>•</span>
+                            <span>{thread._count?.replies || 0} replies</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {thread.createdAt ? new Date(thread.createdAt).toLocaleDateString() : 'Recently'}
+                          </p>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-2">No related threads found</p>
+                        <button
+                          onClick={() => router.push("/community-forum")}
+                          className="text-xs text-primary hover:text-primary/80 transition-colors"
+                        >
+                          Browse all threads
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       </div>
