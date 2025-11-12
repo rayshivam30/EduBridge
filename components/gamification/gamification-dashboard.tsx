@@ -46,11 +46,11 @@ export function GamificationDashboard() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i} className="animate-pulse">
-            <CardContent className="p-6">
-              <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <CardContent className="p-4 sm:p-6">
+              <div className="h-16 sm:h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
             </CardContent>
           </Card>
         ))}
@@ -71,9 +71,9 @@ export function GamificationDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -104,21 +104,21 @@ export function GamificationDashboard() {
           transition={{ delay: 0.3 }}
         >
           <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Target className="w-5 h-5" />
-                    <span className="text-sm opacity-90">Lessons</span>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                    <Target className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm opacity-90">Lessons</span>
                   </div>
-                  <div className="text-2xl font-bold">{stats.completedLessons}</div>
+                  <div className="text-lg sm:text-2xl font-bold">{stats.completedLessons}</div>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Trophy className="w-5 h-5" />
-                    <span className="text-sm opacity-90">Quizzes</span>
+                <div className="text-right min-w-0">
+                  <div className="flex items-center gap-1 sm:gap-2 mb-1 justify-end">
+                    <Trophy className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm opacity-90">Quizzes</span>
                   </div>
-                  <div className="text-2xl font-bold">{stats.completedQuizzes}</div>
+                  <div className="text-lg sm:text-2xl font-bold">{stats.completedQuizzes}</div>
                 </div>
               </div>
             </CardContent>
@@ -131,16 +131,16 @@ export function GamificationDashboard() {
           transition={{ delay: 0.4 }}
         >
           <Card className="bg-gradient-to-r from-pink-500 to-rose-600 text-white">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Award className="w-5 h-5" />
-                    <span className="text-sm opacity-90">Achievements</span>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                    <Award className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm opacity-90">Achievements</span>
                   </div>
-                  <div className="text-2xl font-bold">{stats.achievements.length}</div>
+                  <div className="text-lg sm:text-2xl font-bold">{stats.achievements.length}</div>
                 </div>
-                <Award className="w-8 h-8 opacity-50" />
+                <Award className="w-6 h-6 sm:w-8 sm:h-8 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
@@ -169,14 +169,14 @@ export function GamificationDashboard() {
           transition={{ delay: 0.6 }}
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="w-6 h-6 text-yellow-600" />
-                Recent Achievements
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Award className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 flex-shrink-0" />
+                <span>Recent Achievements</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4">
+            <CardContent className="pt-0">
+              <div className="flex flex-wrap gap-2 sm:gap-4">
                 {stats.achievements.slice(0, 8).map((achievement, index) => (
                   <motion.div
                     key={achievement.id}
@@ -193,7 +193,7 @@ export function GamificationDashboard() {
               </div>
               
               {stats.achievements.length > 8 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-3 sm:mt-4">
                   +{stats.achievements.length - 8} more achievements
                 </p>
               )}

@@ -93,7 +93,7 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
     return () => window.removeEventListener('focus', handleFocus)
   }, [])
 
-  const currentCourses = useMemo(() => {
+  const allCurrentCourses = useMemo(() => {
     if (!dashboardStats?.courseProgresses) {
       return (enrollments ?? []).map((e) => ({
         title: e.course?.title ?? "Course",
@@ -115,6 +115,11 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
       }
     })
   }, [enrollments, dashboardStats])
+
+  // Limit to 3 courses for dashboard display
+  const currentCourses = useMemo(() => {
+    return allCurrentCourses.slice(0, 3)
+  }, [allCurrentCourses])
 
   const dynamicStats = useMemo(() => {
     const stats = dashboardStats || {
@@ -322,10 +327,21 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
           <Card className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-foreground">Current Courses</h3>
-              <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-                <span className="hidden sm:inline">View All</span>
-                <span className="sm:hidden">All</span>
-              </Button>
+              {allCurrentCourses.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs sm:text-sm"
+                  onClick={() => router.push("/student/my-courses")}
+                >
+                  <span className="hidden sm:inline">
+                    {allCurrentCourses.length > 3 ? `View All (${allCurrentCourses.length})` : 'Manage Courses'}
+                  </span>
+                  <span className="sm:hidden">
+                    {allCurrentCourses.length > 3 ? `All (${allCurrentCourses.length})` : 'All'}
+                  </span>
+                </Button>
+              )}
             </div>
             <div className="space-y-4">
               {loading ? (
@@ -333,7 +349,13 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                   <p className="text-muted-foreground">Loading your courses...</p>
                 </div>
               ) : currentCourses.length > 0 ? (
-                currentCourses.map((course: any, idx: number) => (
+                <>
+                  {allCurrentCourses.length > 3 && (
+                    <div className="text-xs text-muted-foreground mb-4 p-2 bg-muted/50 rounded-lg">
+                      Showing 3 of {allCurrentCourses.length} courses. Click "View All" to see more.
+                    </div>
+                  )}
+                  {currentCourses.map((course: any, idx: number) => (
                   <div
                     key={idx}
                     className="border border-border rounded-lg p-3 sm:p-4 hover:border-primary/50 transition-colors cursor-pointer"
@@ -369,7 +391,8 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                       />
                     </div>
                   </div>
-                ))
+                  ))}
+                </>
               ) : (
                 <div className="text-center py-8 border border-dashed rounded-lg">
                   <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />

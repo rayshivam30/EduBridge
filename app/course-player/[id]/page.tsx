@@ -26,5 +26,18 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     redirect(`/courses/${id}`) // Redirect to course details page if not enrolled
   }
 
-  return <CoursePlayerClient course={course} />
+  // Serialize the course data to handle Decimal types
+  const serializedCourse = {
+    ...course,
+    price: course.price.toString(), // Convert Decimal to string
+    createdAt: course.createdAt.toISOString(),
+    updatedAt: course.updatedAt.toISOString(),
+    lessons: course.lessons?.map((lesson: any) => ({
+      ...lesson,
+      createdAt: lesson.createdAt.toISOString(),
+      updatedAt: lesson.updatedAt.toISOString(),
+    })) || []
+  }
+
+  return <CoursePlayerClient course={serializedCourse} />
 }

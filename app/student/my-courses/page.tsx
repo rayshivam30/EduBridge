@@ -1,11 +1,9 @@
-import { Suspense } from 'react'
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
-import { GamificationClient } from './GamificationClient'
+import { redirect } from "next/navigation"
+import { auth } from "@/lib/auth"
+import { MyCoursesClient } from "./MyCoursesClient"
 
-export default async function GamificationPage() {
+export default async function MyCoursesPage() {
   const session = await auth()
-  
   if (!session?.user?.id) redirect("/login")
   
   const role = (session.user as any).role
@@ -20,5 +18,5 @@ export default async function GamificationPage() {
     redirect("/onboarding")
   }
   
-  return <GamificationClient />
+  return <MyCoursesClient />
 }

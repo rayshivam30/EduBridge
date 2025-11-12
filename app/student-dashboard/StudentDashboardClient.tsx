@@ -20,6 +20,8 @@ function pageToPath(page: string): string {
       return "/teacher-dashboard"
     case "community-forum":
       return "/community-forum"
+    case "my-courses":
+      return "/student/my-courses"
     default:
       return "/"
   }

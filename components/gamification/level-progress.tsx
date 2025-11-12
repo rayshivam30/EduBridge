@@ -23,25 +23,25 @@ export function LevelProgress({
   const pointsNeeded = pointsForNextLevel - currentPoints
 
   return (
-    <div className={cn('bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700', className)}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-full w-10 h-10 flex items-center justify-center text-white font-bold">
+    <div className={cn('bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700', className)}>
+      <div className="flex items-center justify-between mb-3 gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0">
             {level}
           </div>
-          <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
               Level {level}
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
               {pointsNeeded > 0 ? `${pointsNeeded} points to level ${level + 1}` : 'Max level reached!'}
             </p>
           </div>
         </div>
         
-        <div className="text-right">
-          <div className="text-sm text-gray-600 dark:text-gray-400">Progress</div>
-          <div className="font-semibold text-gray-900 dark:text-white">
+        <div className="text-right flex-shrink-0">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Progress</div>
+          <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
             {Math.round(progressToNextLevel)}%
           </div>
         </div>

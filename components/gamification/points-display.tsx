@@ -21,16 +21,16 @@ export function PointsDisplay({
 }: PointsDisplayProps) {
   if (variant === 'compact') {
     return (
-      <div className={cn('flex items-center gap-2', className)}>
+      <div className={cn('flex items-center gap-1 sm:gap-2', className)}>
         <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
-          <Zap className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-          <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+          <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+          <span className="text-xs sm:text-sm font-medium text-yellow-700 dark:text-yellow-300">
             {points.toLocaleString()}
           </span>
         </div>
         <div className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/20 px-2 py-1 rounded-full">
-          <Trophy className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+          <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+          <span className="text-xs sm:text-sm font-medium text-purple-700 dark:text-purple-300">
             Lv. {level}
           </span>
         </div>
@@ -39,16 +39,16 @@ export function PointsDisplay({
   }
 
   return (
-    <div className={cn('bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg p-4 text-white', className)}>
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Zap className="w-5 h-5" />
-            <span className="text-sm opacity-90">Total Points</span>
+    <div className={cn('bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg p-3 sm:p-4 text-white', className)}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 mb-1">
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            <span className="text-xs sm:text-sm opacity-90">Total Points</span>
           </div>
           {showAnimation ? (
             <motion.div
-              className="text-2xl font-bold"
+              className="text-lg sm:text-2xl font-bold"
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.3 }}
@@ -56,15 +56,15 @@ export function PointsDisplay({
               {points.toLocaleString()}
             </motion.div>
           ) : (
-            <div className="text-2xl font-bold">{points.toLocaleString()}</div>
+            <div className="text-lg sm:text-2xl font-bold">{points.toLocaleString()}</div>
           )}
         </div>
-        <div className="text-right">
-          <div className="flex items-center gap-2 mb-1">
-            <Trophy className="w-5 h-5" />
-            <span className="text-sm opacity-90">Level</span>
+        <div className="text-right min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 mb-1 justify-end">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            <span className="text-xs sm:text-sm opacity-90">Level</span>
           </div>
-          <div className="text-2xl font-bold">{level}</div>
+          <div className="text-lg sm:text-2xl font-bold">{level}</div>
         </div>
       </div>
     </div>

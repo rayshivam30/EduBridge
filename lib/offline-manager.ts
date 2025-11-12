@@ -212,10 +212,21 @@ export class OfflineManager {
   }
 
   async getProgress(userId: string, courseId: string): Promise<StudentProgress[]> {
-    return await db.studentProgress
-      .where(['userId', 'courseId'])
-      .equals([userId, courseId])
-      .toArray();
+    try {
+      // Try to use compound index (available in schema version 2+)
+      return await db.studentProgress
+        .where(['userId', 'courseId'])
+        .equals([userId, courseId])
+        .toArray();
+    } catch (error) {
+      // Fallback for older schema versions - filter manually
+      console.warn('Compound index not available, using fallback method:', error);
+      return await db.studentProgress
+        .where('userId')
+        .equals(userId)
+        .filter(progress => progress.courseId === courseId)
+        .toArray();
+    }
   }
 
   // Quiz Management
@@ -257,10 +268,21 @@ export class OfflineManager {
   }
 
   async getQuizAttempts(userId: string, quizId: string): Promise<QuizAttempt[]> {
-    return await db.quizAttempts
-      .where(['userId', 'quizId'])
-      .equals([userId, quizId])
-      .toArray();
+    try {
+      // Try to use compound index (available in schema version 2+)
+      return await db.quizAttempts
+        .where(['userId', 'quizId'])
+        .equals([userId, quizId])
+        .toArray();
+    } catch (error) {
+      // Fallback for older schema versions - filter manually
+      console.warn('Compound index not available, using fallback method:', error);
+      return await db.quizAttempts
+        .where('userId')
+        .equals(userId)
+        .filter(attempt => attempt.quizId === quizId)
+        .toArray();
+    }
   }
 
   // Forum Management
@@ -334,23 +356,77 @@ export class OfflineManager {
 
   // AI Tutor Cache Management
   async getCachedAIResponse(query: string, courseId?: string, lessonId?: string): Promise<string | null> {
-    const cached = await db.aiTutorCache
-      .where(['query', 'courseId', 'lessonId'])
-      .equals([query, courseId || '', lessonId || ''])
-      .first();
-    
-    return cached?.response || null;
+    try {
+      // Ensure database is ready
+      const { ensureDatabaseReady } = await import('./offline-db');
+      await ensureDatabaseReady();
+      
+      // Try to use compound index (available in schema version 3+)
+      const cached = await db.aiTutorCache
+        .where(['query', 'courseId', 'lessonId'])
+        .equals([query, courseId || '', lessonId || ''])
+        .first();
+      
+      return cached?.response || null;
+    } catch (error) {
+      // Check if it's a schema error
+      if (error instanceof Error && (error.message.includes('SchemaError') || error.message.includes('not indexed'))) {
+        console.warn('Schema error detected, attempting to handle gracefully:', error.message);
+        
+        // Try to handle schema error
+        try {
+          const { handleSchemaError } = await import('./offline-db');
+          await handleSchemaError();
+          
+          // Retry with compound index after schema fix
+          const cached = await db.aiTutorCache
+            .where(['query', 'courseId', 'lessonId'])
+            .equals([query, courseId || '', lessonId || ''])
+            .first();
+          
+          return cached?.response || null;
+        } catch (retryError) {
+          console.warn('Schema fix failed, using fallback method');
+        }
+      }
+      
+      // Fallback for older schema versions or when compound index fails - filter manually
+      try {
+        const cached = await db.aiTutorCache
+          .where('query')
+          .equals(query)
+          .filter(cache => 
+            cache.courseId === (courseId || '') && 
+            cache.lessonId === (lessonId || '')
+          )
+          .first();
+        
+        return cached?.response || null;
+      } catch (fallbackError) {
+        console.error('All AI cache retrieval methods failed:', fallbackError);
+        return null;
+      }
+    }
   }
 
   async cacheAIResponse(query: string, response: string, courseId?: string, lessonId?: string): Promise<void> {
-    await db.aiTutorCache.put({
-      id: `${query}-${courseId || ''}-${lessonId || ''}-${Date.now()}`,
-      query,
-      response,
-      courseId,
-      lessonId,
-      createdAt: new Date()
-    });
+    try {
+      // Ensure database is ready
+      const { ensureDatabaseReady } = await import('./offline-db');
+      await ensureDatabaseReady();
+      
+      await db.aiTutorCache.put({
+        id: `${query}-${courseId || ''}-${lessonId || ''}-${Date.now()}`,
+        query,
+        response,
+        courseId,
+        lessonId,
+        createdAt: new Date()
+      });
+    } catch (error) {
+      console.error('Failed to cache AI response:', error);
+      // Don't throw error, just log it
+    }
   }
 
   async queryAITutor(query: string, courseId?: string, lessonId?: string): Promise<string> {
@@ -473,6 +549,37 @@ export class OfflineManager {
     } catch (error) {
       console.warn('Failed to open media cache:', error);
       // Don't throw error, just log warning
+    }
+  }
+
+  // Database Management
+  async checkDatabaseHealth(): Promise<boolean> {
+    try {
+      // Test if compound indexes work
+      await db.studentProgress
+        .where(['userId', 'courseId'])
+        .equals(['test', 'test'])
+        .limit(1)
+        .toArray();
+      return true;
+    } catch (error) {
+      console.warn('Database schema is outdated, compound indexes not available');
+      return false;
+    }
+  }
+
+  async upgradeDatabaseIfNeeded(): Promise<void> {
+    const isHealthy = await this.checkDatabaseHealth();
+    if (!isHealthy) {
+      console.log('Upgrading database schema...');
+      try {
+        // Import the clear function
+        const { clearOldDatabase } = await import('./offline-db');
+        await clearOldDatabase();
+        console.log('Database upgraded successfully');
+      } catch (error) {
+        console.error('Failed to upgrade database:', error);
+      }
     }
   }
 

@@ -42,7 +42,7 @@ export default async function Page() {
     }
   })
 
-  // Calculate progress for each course
+  // Calculate progress for each course and serialize data for client
   const coursesWithProgress = enrollments.map(enrollment => {
     const courseProgress = progressData.filter(p => 
       enrollment.course.lessons.some(l => l.id === p.lessonId)
@@ -53,6 +53,17 @@ export default async function Page() {
 
     return {
       ...enrollment,
+      course: {
+        ...enrollment.course,
+        // Convert Decimal to string for client serialization
+        price: enrollment.course.price.toString(),
+        // Ensure dates are serializable
+        createdAt: enrollment.course.createdAt.toISOString(),
+        updatedAt: enrollment.course.updatedAt.toISOString()
+      },
+      // Ensure enrollment dates are serializable
+      createdAt: enrollment.createdAt.toISOString(),
+      updatedAt: enrollment.updatedAt.toISOString(),
       progress: {
         completed: completedLessons,
         total: totalLessons,

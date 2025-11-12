@@ -116,6 +116,7 @@ export class EduBridgeDB extends Dexie {
   constructor() {
     super('EduBridgeOffline');
     
+    // Version 1 - Initial schema
     this.version(1).stores({
       courses: 'id, title, isDownloaded, lastSynced',
       lessons: 'id, courseId, title, order, lastSynced',
@@ -127,21 +128,174 @@ export class EduBridgeDB extends Dexie {
       aiTutorCache: 'id, query, courseId, lessonId, createdAt',
       pendingSync: 'id, type, createdAt, retryCount'
     });
+
+    // Version 2 - Add compound indexes for better performance
+    this.version(2).stores({
+      courses: 'id, title, isDownloaded, lastSynced',
+      lessons: 'id, courseId, title, order, lastSynced',
+      quizzes: 'id, courseId, lessonId, title, lastSynced',
+      studentProgress: 'id, userId, courseId, lessonId, completed, synced, [userId+courseId], [userId+lessonId]',
+      quizAttempts: 'id, userId, quizId, completedAt, synced, [userId+quizId]',
+      forumPosts: 'id, userId, courseId, createdAt, synced',
+      forumReplies: 'id, postId, userId, createdAt, synced',
+      aiTutorCache: 'id, query, courseId, lessonId, createdAt',
+      pendingSync: 'id, type, createdAt, retryCount'
+    });
+
+    // Version 3 - Add AI tutor cache compound index
+    this.version(3).stores({
+      courses: 'id, title, isDownloaded, lastSynced',
+      lessons: 'id, courseId, title, order, lastSynced',
+      quizzes: 'id, courseId, lessonId, title, lastSynced',
+      studentProgress: 'id, userId, courseId, lessonId, completed, synced, [userId+courseId], [userId+lessonId]',
+      quizAttempts: 'id, userId, quizId, completedAt, synced, [userId+quizId]',
+      forumPosts: 'id, userId, courseId, createdAt, synced',
+      forumReplies: 'id, postId, userId, createdAt, synced',
+      aiTutorCache: 'id, query, courseId, lessonId, createdAt, [query+courseId+lessonId]',
+      pendingSync: 'id, type, createdAt, retryCount'
+    });
   }
 }
 
 // Initialize database with error handling
 let dbInstance: EduBridgeDB | null = null;
+let initializationPromise: Promise<EduBridgeDB> | null = null;
 
-export const db = (() => {
-  if (typeof window !== 'undefined' && !dbInstance) {
+async function initializeDatabase(): Promise<EduBridgeDB> {
+  if (typeof window === 'undefined') {
+    // Return a mock database for SSR
+    return new EduBridgeDB();
+  }
+
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+
+  initializationPromise = (async () => {
+    if (!dbInstance) {
+      try {
+        dbInstance = new EduBridgeDB();
+        
+        // Wait for the database to be ready before setting up event handlers
+        await dbInstance.open();
+        
+        // Handle database upgrade events
+        dbInstance.on('versionchange', () => {
+          console.log('Database version changed, reloading...');
+          if (dbInstance) {
+            dbInstance.close();
+            dbInstance = null;
+          }
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
+        });
+
+        // Handle schema errors
+        dbInstance.on('error', (error) => {
+          console.error('Database error:', error);
+          if (error.message?.includes('SchemaError') || error.message?.includes('not indexed')) {
+            console.warn('Schema error detected, will attempt to fix on next operation');
+          }
+        });
+        
+      } catch (error) {
+        console.error('Failed to initialize offline database:', error);
+        // Create a fallback instance
+        try {
+          dbInstance = new EduBridgeDB();
+          await dbInstance.open();
+        } catch (fallbackError) {
+          console.error('Failed to create fallback database:', fallbackError);
+          // Return a minimal mock for complete failure
+          dbInstance = new EduBridgeDB();
+        }
+      }
+    }
+    
+    return dbInstance;
+  })();
+
+  return initializationPromise;
+}
+
+// Create a proxy that initializes the database on first access
+export const db = new Proxy({} as EduBridgeDB, {
+  get(target, prop) {
+    if (typeof window === 'undefined') {
+      // For SSR, return a mock that doesn't do anything
+      return () => Promise.resolve();
+    }
+    
+    // Initialize database if not already done
+    if (!dbInstance) {
+      initializeDatabase().catch(error => {
+        console.error('Database initialization failed:', error);
+      });
+      
+      // Return a temporary database instance
+      const tempDb = new EduBridgeDB();
+      return tempDb[prop as keyof EduBridgeDB];
+    }
+    
+    return dbInstance[prop as keyof EduBridgeDB];
+  }
+});
+
+// Utility function to ensure database is initialized
+export async function ensureDatabaseReady(): Promise<EduBridgeDB> {
+  return await initializeDatabase();
+}
+
+// Utility function to clear old database if schema is incompatible
+export async function clearOldDatabase(): Promise<void> {
+  if (typeof window !== 'undefined') {
     try {
-      dbInstance = new EduBridgeDB();
+      // Close current connection
+      if (dbInstance) {
+        dbInstance.close();
+        dbInstance = null;
+      }
+      
+      // Reset initialization promise
+      initializationPromise = null;
+      
+      // Delete the database
+      await Dexie.delete('EduBridgeOffline');
+      
+      // Reinitialize
+      await initializeDatabase();
+      
+      console.log('Database cleared and reinitialized');
     } catch (error) {
-      console.error('Failed to initialize offline database:', error);
-      // Return a mock database for SSR or when IndexedDB is not available
-      dbInstance = new EduBridgeDB();
+      console.error('Failed to clear old database:', error);
     }
   }
-  return dbInstance || new EduBridgeDB();
-})();
+}
+
+// Utility function to handle schema upgrade errors
+export async function handleSchemaError(): Promise<void> {
+  if (typeof window !== 'undefined') {
+    try {
+      console.warn('Schema error detected, attempting to fix...');
+      
+      // Close current connection
+      if (dbInstance) {
+        dbInstance.close();
+        dbInstance = null;
+      }
+      
+      // Try to open with the latest schema
+      const testDb = new EduBridgeDB();
+      await testDb.open();
+      
+      // If successful, update the global instance
+      dbInstance = testDb;
+      
+      console.log('Schema error resolved');
+    } catch (error) {
+      console.error('Failed to resolve schema error, clearing database:', error);
+      await clearOldDatabase();
+    }
+  }
+}
