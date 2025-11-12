@@ -170,18 +170,18 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation currentPage="courses" onNavigate={handleNavigate} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12">
           <div className="animate-pulse">
-            <div className="h-8 bg-muted rounded w-1/4 mb-8"></div>
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="h-6 sm:h-8 bg-muted rounded w-1/4 mb-6 sm:mb-8"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
               <div className="lg:col-span-2">
-                <div className="h-64 bg-muted rounded-lg mb-6"></div>
-                <div className="h-8 bg-muted rounded w-3/4 mb-4"></div>
-                <div className="h-4 bg-muted rounded w-full mb-2"></div>
-                <div className="h-4 bg-muted rounded w-5/6"></div>
+                <div className="h-48 sm:h-64 bg-muted rounded-lg mb-4 sm:mb-6"></div>
+                <div className="h-6 sm:h-8 bg-muted rounded w-3/4 mb-3 sm:mb-4"></div>
+                <div className="h-3 sm:h-4 bg-muted rounded w-full mb-2"></div>
+                <div className="h-3 sm:h-4 bg-muted rounded w-5/6"></div>
               </div>
               <div>
-                <div className="h-48 bg-muted rounded-lg"></div>
+                <div className="h-40 sm:h-48 bg-muted rounded-lg"></div>
               </div>
             </div>
           </div>
@@ -194,14 +194,14 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation currentPage="courses" onNavigate={handleNavigate} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center py-16">
-            <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium text-foreground">Course not found</h3>
-            <p className="text-muted-foreground mt-2 mb-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-12">
+          <div className="text-center py-12 sm:py-16">
+            <BookOpen className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mb-4" />
+            <h3 className="text-base sm:text-lg font-medium text-foreground">Course not found</h3>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2 mb-6 px-4">
               The course you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
-            <Button onClick={() => router.push("/courses")}>
+            <Button onClick={() => router.push("/courses")} size="sm">
               Back to Courses
             </Button>
           </div>
@@ -228,71 +228,68 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navigation currentPage="courses" onNavigate={handleNavigate} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Back Button */}
         <Button
           variant="ghost"
-          className="mb-6 gap-2"
+          className="mb-4 sm:mb-6 gap-2 text-sm"
           onClick={() => router.push("/courses")}
+          size="sm"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Courses
+          <span className="hidden sm:inline">Back to Courses</span>
+          <span className="sm:hidden">Back</span>
         </Button>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* Course Header */}
-            <div className="mb-8">
+            <div className="mb-6 sm:mb-8">
               <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant={isPaid ? "default" : "secondary"}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <Badge variant={isPaid ? "default" : "secondary"} className="text-xs">
                       {isPaid ? "Premium" : "Free"}
                     </Badge>
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-xs">
                       {course.status === "published" ? "Active" : "Draft"}
                     </Badge>
                   </div>
-                  <h1 className="text-3xl font-bold text-foreground mb-2">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-2 break-words">
                     {course.title}
                   </h1>
-                  <p className="text-lg text-muted-foreground mb-4">
+                  <p className="text-sm sm:text-base lg:text-lg text-muted-foreground mb-4 break-words">
                     {course.description}
                   </p>
                 </div>
               </div>
 
               {/* Course Stats */}
-              <div className="flex items-center gap-6 text-sm text-muted-foreground mb-6">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 sm:gap-6 text-xs sm:text-sm text-muted-foreground mb-6">
                 <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  <span>{course._count?.enrollments || 0} students</span>
+                  <Users className="h-3 h-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="truncate">{course._count?.enrollments || 0} students</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <BookOpen className="h-4 w-4" />
-                  <span>{course._count?.lessons || 0} lessons</span>
+                  <BookOpen className="h-3 h-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="truncate">{course._count?.lessons || 0} lessons</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{course._count?.lessons ? `${course._count.lessons} lessons` : 'No lessons yet'}</span>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
+                <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
+                  <Calendar className="h-3 h-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="truncate">Created {new Date(course.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
 
               {/* Progress Bar (if enrolled) */}
               {isEnrolled && (
-                <Card className="p-4 mb-6 bg-primary/5 border-primary/20">
+                <Card className="p-3 sm:p-4 mb-4 sm:mb-6 bg-primary/5 border-primary/20">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-foreground">Your Progress</span>
-                    <span className="text-sm text-primary font-semibold">{progress}%</span>
+                    <span className="text-xs sm:text-sm font-medium text-foreground">Your Progress</span>
+                    <span className="text-xs sm:text-sm text-primary font-semibold">{progress}%</span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
                     <div
@@ -308,14 +305,14 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
             {/* First Lesson Preview Video */}
             {course.lessons && course.lessons.length > 0 && course.lessons[0] && (
-              <Card className="mb-8 overflow-hidden">
-                <div className="p-4 bg-muted/30 border-b">
-                  <h3 className="font-medium text-foreground">Course Preview</h3>
-                  <p className="text-sm text-muted-foreground">{course.lessons[0].title}</p>
+              <Card className="mb-6 sm:mb-8 overflow-hidden">
+                <div className="p-3 sm:p-4 bg-muted/30 border-b">
+                  <h3 className="font-medium text-foreground text-sm sm:text-base">Course Preview</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground break-words">{course.lessons[0].title}</p>
                 </div>
                 <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative group cursor-pointer">
                   <button 
-                    className="w-20 h-20 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center transition-colors group-hover:scale-110 duration-200"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center transition-colors group-hover:scale-110 duration-200"
                     onClick={() => {
                       if (isEnrolled) {
                         router.push(`/course-player/${courseId}`)
@@ -324,9 +321,9 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                       }
                     }}
                   >
-                    <Play className="w-8 h-8 text-primary-foreground ml-1" />
+                    <Play className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground ml-1" />
                   </button>
-                  <div className="absolute bottom-4 left-4 bg-black/50 text-white px-2 py-1 rounded text-sm">
+                  <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 bg-black/50 text-white px-2 py-1 rounded text-xs sm:text-sm">
                     {isEnrolled ? 'Click to start course' : 'Enroll to watch'}
                   </div>
                 </div>
@@ -335,39 +332,39 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
             {/* What You'll Learn */}
             {course.description && (
-              <Card className="p-6 mb-8">
-                <h3 className="text-xl font-semibold text-foreground mb-4">About this course</h3>
-                <p className="text-foreground leading-relaxed">{course.description}</p>
+              <Card className="p-4 sm:p-6 mb-6 sm:mb-8">
+                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">About this course</h3>
+                <p className="text-sm sm:text-base text-foreground leading-relaxed break-words">{course.description}</p>
               </Card>
             )}
 
             {/* Course Content */}
             {course.lessons && course.lessons.length > 0 && (
-              <Card className="p-6 mb-8">
-                <h3 className="text-xl font-semibold text-foreground mb-4">Course Content</h3>
-                <div className="space-y-2">
+              <Card className="p-4 sm:p-6 mb-6 sm:mb-8">
+                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Course Content</h3>
+                <div className="space-y-1 sm:space-y-2">
                   {course.lessons.map((lesson: any, idx: number) => {
                     const lessonProgress = progressData.find(p => p.lessonId === lesson.id)
                     const isCompleted = lessonProgress?.progress?.percent === 100
                     const progressPercent = lessonProgress?.progress?.percent || 0
                     
                     return (
-                      <div key={lesson.id} className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground font-mono">
+                      <div key={lesson.id} className="flex items-center justify-between py-2 sm:py-3 border-b border-border last:border-b-0 gap-2">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          <span className="text-xs sm:text-sm text-muted-foreground font-mono flex-shrink-0">
                             {String(lesson.order || idx + 1).padStart(2, '0')}
                           </span>
                           {isCompleted ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
                           ) : (
-                            <Play className="h-4 w-4 text-muted-foreground" />
+                            <Play className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                           )}
-                          <span className={`text-sm ${isCompleted ? 'text-green-600' : 'text-foreground'}`}>
+                          <span className={`text-xs sm:text-sm ${isCompleted ? 'text-green-600' : 'text-foreground'} break-words`}>
                             {lesson.title}
                           </span>
                         </div>
                         {isEnrolled && progressPercent > 0 && progressPercent < 100 && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground flex-shrink-0">
                             {progressPercent}%
                           </span>
                         )}
@@ -379,22 +376,22 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
             )}
 
             {/* Instructor */}
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold text-foreground mb-4">Instructor</h3>
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                  <span className="text-lg font-semibold text-primary">
+            <Card className="p-4 sm:p-6">
+              <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Instructor</h3>
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm sm:text-lg font-semibold text-primary">
                     {course.createdBy?.name?.charAt(0) || "I"}
                   </span>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-foreground mb-1">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-foreground mb-1 text-sm sm:text-base break-words">
                     {course.createdBy?.name || "Instructor"}
                   </h4>
-                  <p className="text-sm text-muted-foreground mb-3">
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
                     Course Creator
                   </p>
-                  <p className="text-sm text-foreground">
+                  <p className="text-xs sm:text-sm text-foreground">
                     Created {new Date(course.createdAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -403,26 +400,26 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Enrollment Card */}
-            <Card className="p-6">
-              <div className="text-center mb-6">
+            <Card className="p-4 sm:p-6">
+              <div className="text-center mb-4 sm:mb-6">
                 {isPaid && (
-                  <div className="text-3xl font-bold text-foreground mb-2">
+                  <div className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
                     ₹{Number(course.price).toLocaleString()}
                   </div>
                 )}
                 {!isPaid && (
-                  <div className="text-2xl font-bold text-primary mb-2">Free Course</div>
+                  <div className="text-xl sm:text-2xl font-bold text-primary mb-2">Free Course</div>
                 )}
               </div>
 
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                 {isEnrolled ? (
                   <>
                     {progress > 0 ? (
                       <Button
-                        className="w-full gap-2"
+                        className="w-full gap-2 text-sm"
                         onClick={handleStartCourse}
                       >
                         <Play className="h-4 w-4" />
@@ -430,7 +427,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                       </Button>
                     ) : (
                       <Button
-                        className="w-full gap-2"
+                        className="w-full gap-2 text-sm"
                         onClick={handleStartCourse}
                       >
                         <Play className="h-4 w-4" />
@@ -440,7 +437,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                   </>
                 ) : (
                   <Button
-                    className="w-full gap-2"
+                    className="w-full gap-2 text-sm"
                     onClick={handleEnroll}
                     disabled={enrolling}
                   >
@@ -451,7 +448,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full gap-2"
+                  className="w-full gap-2 text-xs sm:text-sm"
                   onClick={handleShare}
                 >
                   <Share2 className="h-4 w-4" />
@@ -460,7 +457,7 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                 
                 {/* Offline Download - Only for enrolled students */}
                 {isEnrolled && (
-                  <div className="pt-3">
+                  <div className="pt-2 sm:pt-3">
                     <CourseDownload 
                       courseId={courseId}
                       courseName={course.title}
@@ -469,40 +466,40 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
                 )}
               </div>
 
-              <Separator className="mb-6" />
+              <Separator className="mb-4 sm:mb-6" />
 
               {/* Course Features */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-foreground">This course includes:</h4>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <div className="space-y-3 sm:space-y-4">
+                <h4 className="font-semibold text-foreground text-sm sm:text-base">This course includes:</h4>
+                <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                     <span>{course._count?.lessons || 0} lessons</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                     <span>{course._count?.enrollments || 0} students enrolled</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Globe className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Globe className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                     <span>Access on mobile and desktop</span>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     {isOnline ? (
-                      <Wifi className="h-4 w-4 text-green-600" />
+                      <Wifi className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
                     ) : (
-                      <WifiOff className="h-4 w-4 text-yellow-600" />
+                      <WifiOff className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600 flex-shrink-0" />
                     )}
                     <span>Offline access available</span>
                   </div>
                   {isEnrolled && (
-                    <div className="flex items-center gap-3">
-                      <Download className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <Download className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                       <span>Downloadable for offline use</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                     <span>Lifetime access</span>
                   </div>
                 </div>
@@ -511,20 +508,20 @@ export function CourseDetailClient({ courseId }: CourseDetailClientProps) {
 
             {/* Related Courses */}
             {relatedCourses.length > 0 && (
-              <Card className="p-6">
-                <h4 className="font-semibold text-foreground mb-4">Related Courses</h4>
-                <div className="space-y-4">
+              <Card className="p-4 sm:p-6">
+                <h4 className="font-semibold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">Related Courses</h4>
+                <div className="space-y-3 sm:space-y-4">
                   {relatedCourses.map((relatedCourse: any) => (
                     <div 
                       key={relatedCourse.id} 
-                      className="flex gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                      className="flex gap-2 sm:gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
                       onClick={() => router.push(`/courses/${relatedCourse.id}`)}
                     >
-                      <div className="w-16 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="h-4 w-4 text-primary" />
+                      <div className="w-12 h-10 sm:w-16 sm:h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h5 className="font-medium text-foreground text-sm line-clamp-2">
+                        <h5 className="font-medium text-foreground text-xs sm:text-sm line-clamp-2 break-words">
                           {relatedCourse.title}
                         </h5>
                         <p className="text-xs text-muted-foreground">

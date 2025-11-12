@@ -33,7 +33,7 @@ export default function RecommendationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navigation currentPage={currentPage} onNavigate={handleNavigate} />
       <RecommendationClient />
     </div>

@@ -200,16 +200,16 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Welcome Section */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back!</h1>
-            <p className="text-muted-foreground">Here{'\''}s your learning progress this week</p>
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 break-words">Welcome back!</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Here{'\''}s your learning progress this week</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
             {gamificationStats && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 justify-center sm:justify-start">
                 <PointsDisplay 
                   points={gamificationStats.totalPoints} 
                   level={gamificationStats.level}
@@ -224,48 +224,52 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
             )}
             <Button
               onClick={() => router.push("/courses")}
-              className="gap-2"
+              className="gap-2 text-sm"
+              size="sm"
             >
               <BookOpen className="w-4 h-4" />
-              Browse Courses
+              <span className="hidden sm:inline">Browse Courses</span>
+              <span className="sm:hidden">Courses</span>
             </Button>
           </div>
         </div>
 
         {/* Personalized Roadmap Promotion */}
-        <Card className="mb-8 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-white" />
+        <Card className="mb-6 sm:mb-8 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 min-w-0">
+                <div className="p-2 sm:p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg w-fit">
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-1">Get Your Personalized Learning Roadmap</h3>
-                  <p className="text-muted-foreground text-sm">Tell us what you want to learn and get a customized path with course recommendations tailored just for you!</p>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1 break-words">Get Your Personalized Learning Roadmap</h3>
+                  <p className="text-muted-foreground text-xs sm:text-sm">Tell us what you want to learn and get a customized path with course recommendations tailored just for you!</p>
                 </div>
               </div>
               <Button 
                 onClick={() => router.push("/student/recommendations")}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm w-full sm:w-auto"
+                size="sm"
               >
-                Create Roadmap
+                <span className="hidden sm:inline">Create Roadmap</span>
+                <span className="sm:hidden">Get Roadmap</span>
               </Button>
             </div>
           </div>
         </Card>
 
         {/* Stats Grid */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           {dynamicStats.map((stat, idx) => (
-            <Card key={idx} className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">{stat.label}</p>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+            <Card key={idx} className="p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-0">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1 break-words">{stat.label}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-foreground">{stat.value}</p>
                 </div>
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <stat.icon className="w-6 h-6" />
+                <div className={`p-2 sm:p-3 rounded-lg ${stat.color} w-fit`}>
+                  <stat.icon className="w-4 h-4 sm:w-6 sm:h-6" />
                 </div>
               </div>
             </Card>
@@ -273,33 +277,33 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
         </div>
 
         {/* Charts Section */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Learning Time */}
-          <Card className="lg:col-span-2 p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Learning Time This Week</h3>
-            <ResponsiveContainer width="100%" height={300}>
+          <Card className="lg:col-span-2 p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4">Learning Time This Week</h3>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={learningTimeData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="day" stroke="var(--muted-foreground)" />
-                <YAxis stroke="var(--muted-foreground)" />
-                <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }} />
+                <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={12} />
+                <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", fontSize: "12px" }} />
                 <Legend />
-                <Bar dataKey="hours" fill="var(--primary)" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="hours" fill="var(--primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
           {/* Progress Distribution */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Course Progress</h3>
-            <ResponsiveContainer width="100%" height={300}>
+          <Card className="p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4">Course Progress</h3>
+            <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
                   data={dynamicProgressData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
+                  innerRadius={40}
+                  outerRadius={80}
                   paddingAngle={2}
                   dataKey="value"
                 >
@@ -307,19 +311,20 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)" }} />
+                <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", fontSize: "12px" }} />
               </PieChart>
             </ResponsiveContainer>
           </Card>
         </div>
 
         {/* Ongoing Courses */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-foreground">Current Courses</h3>
-              <Button variant="outline" size="sm">
-                View All
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <Card className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground">Current Courses</h3>
+              <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">View All</span>
+                <span className="sm:hidden">All</span>
               </Button>
             </div>
             <div className="space-y-4">
@@ -331,23 +336,23 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
                 currentCourses.map((course: any, idx: number) => (
                   <div
                     key={idx}
-                    className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer"
+                    className="border border-border rounded-lg p-3 sm:p-4 hover:border-primary/50 transition-colors cursor-pointer"
                     onClick={() => {
                       const cid = (course as any).id as string | undefined
                       if (cid) window.location.href = `/course-player/${cid}`
                       else onNavigate?.("course-player")
                     }}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-semibold text-foreground">{course.title}</h4>
-                        <p className="text-sm text-muted-foreground">{course.instructor}</p>
+                    <div className="flex items-start justify-between mb-3 gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold text-foreground text-sm sm:text-base break-words">{course.title}</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground break-words">{course.instructor}</p>
                       </div>
-                      <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                      <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded flex-shrink-0">
                         {course.level}
                       </span>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">Progress</span>
                         <span className="text-foreground font-medium">{course.progress}%</span>
@@ -383,77 +388,77 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-6">Quick Actions</h3>
-            <div className="space-y-3">
+          <Card className="p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4 sm:mb-6">Quick Actions</h3>
+            <div className="space-y-2 sm:space-y-3">
               <Button
-                className="w-full justify-start gap-3 h-auto py-3 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="w-full justify-start gap-2 sm:gap-3 h-auto py-2 sm:py-3 bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => router.push("/courses")}
               >
-                <BookOpen className="w-5 h-5" />
-                <div className="text-left">
-                  <div className="font-semibold">Browse Courses</div>
-                  <div className="text-xs opacity-90">Discover new courses to learn</div>
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <div className="text-left min-w-0">
+                  <div className="font-semibold text-sm sm:text-base">Browse Courses</div>
+                  <div className="text-xs opacity-90 hidden sm:block">Discover new courses to learn</div>
                 </div>
               </Button>
               <Button
-                className="w-full justify-start gap-3 h-auto py-3 bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                className="w-full justify-start gap-2 sm:gap-3 h-auto py-2 sm:py-3 bg-secondary text-secondary-foreground hover:bg-secondary/90"
                 onClick={() => onNavigate?.("course-player")}
               >
-                <Play className="w-5 h-5" />
-                <div className="text-left">
-                  <div className="font-semibold">Continue Learning</div>
-                  <div className="text-xs opacity-90">Resume from where you left off</div>
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <div className="text-left min-w-0">
+                  <div className="font-semibold text-sm sm:text-base">Continue Learning</div>
+                  <div className="text-xs opacity-90 hidden sm:block">Resume from where you left off</div>
                 </div>
               </Button>
               <Button
-                className="w-full justify-start gap-3 h-auto py-3 bg-accent text-accent-foreground hover:bg-accent/90"
+                className="w-full justify-start gap-2 sm:gap-3 h-auto py-2 sm:py-3 bg-accent text-accent-foreground hover:bg-accent/90"
                 onClick={() => onNavigate?.("ai-tutor")}
               >
-                <MessageCircle className="w-5 h-5" />
-                <div className="text-left">
-                  <div className="font-semibold">Ask AI Tutor</div>
-                  <div className="text-xs opacity-90">Get help with your doubts</div>
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <div className="text-left min-w-0">
+                  <div className="font-semibold text-sm sm:text-base">Ask AI Tutor</div>
+                  <div className="text-xs opacity-90 hidden sm:block">Get help with your doubts</div>
                 </div>
               </Button>
               <Button
-                className="w-full justify-start gap-3 h-auto py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+                className="w-full justify-start gap-2 sm:gap-3 h-auto py-2 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
                 onClick={() => router.push("/student/recommendations")}
               >
-                <TrendingUp className="w-5 h-5" />
-                <div className="text-left">
-                  <div className="font-semibold">Get Learning Roadmap</div>
-                  <div className="text-xs opacity-90">Personalized course recommendations</div>
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <div className="text-left min-w-0">
+                  <div className="font-semibold text-sm sm:text-base">Get Learning Roadmap</div>
+                  <div className="text-xs opacity-90 hidden sm:block">Personalized course recommendations</div>
                 </div>
               </Button>
               <Button
-                className="w-full justify-start gap-3 h-auto py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
+                className="w-full justify-start gap-2 sm:gap-3 h-auto py-2 sm:py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600"
                 onClick={() => router.push("/quiz")}
               >
-                <Brain className="w-5 h-5" />
-                <div className="text-left">
-                  <div className="font-semibold">Take AI Quiz</div>
-                  <div className="text-xs opacity-90">Test your knowledge & earn points</div>
+                <Brain className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <div className="text-left min-w-0">
+                  <div className="font-semibold text-sm sm:text-base">Take AI Quiz</div>
+                  <div className="text-xs opacity-90 hidden sm:block">Test your knowledge & earn points</div>
                 </div>
               </Button>
               <Button
-                className="w-full justify-start gap-3 h-auto py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                className="w-full justify-start gap-2 sm:gap-3 h-auto py-2 sm:py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
                 onClick={() => router.push("/student/revision")}
               >
-                <MessageCircle className="w-5 h-5" />
-                <div className="text-left">
-                  <div className="font-semibold">Revision Session</div>
-                  <div className="text-xs opacity-90">Explain what you learned & get AI feedback</div>
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <div className="text-left min-w-0">
+                  <div className="font-semibold text-sm sm:text-base">Revision Session</div>
+                  <div className="text-xs opacity-90 hidden sm:block">Explain what you learned & get AI feedback</div>
                 </div>
               </Button>
               <Button
-                className="w-full justify-start gap-3 h-auto py-3 bg-muted text-muted-foreground hover:bg-muted/90"
+                className="w-full justify-start gap-2 sm:gap-3 h-auto py-2 sm:py-3 bg-muted text-muted-foreground hover:bg-muted/90"
                 onClick={() => onNavigate?.("community-forum")}
               >
-                <Users className="w-5 h-5" />
-                <div className="text-left">
-                  <div className="font-semibold">Community</div>
-                  <div className="text-xs opacity-90">Connect with other learners</div>
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <div className="text-left min-w-0">
+                  <div className="font-semibold text-sm sm:text-base">Community</div>
+                  <div className="text-xs opacity-90 hidden sm:block">Connect with other learners</div>
                 </div>
               </Button>
             </div>
@@ -462,18 +467,20 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
 
         {/* Gamification Dashboard */}
         {gamificationStats && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
               <div className="flex items-center gap-2">
-                <Zap className="w-6 h-6 text-yellow-600" />
-                <h3 className="text-lg font-semibold text-foreground">Your Progress & Achievements</h3>
+                <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 flex-shrink-0" />
+                <h3 className="text-base sm:text-lg font-semibold text-foreground break-words">Your Progress & Achievements</h3>
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/student/gamification")}
+                className="text-xs sm:text-sm w-full sm:w-auto"
               >
-                View Details
+                <span className="hidden sm:inline">View Details</span>
+                <span className="sm:hidden">Details</span>
               </Button>
             </div>
             <GamificationDashboard />
@@ -481,44 +488,46 @@ export function StudentDashboard({ onNavigate }: StudentDashboardProps) {
         )}
 
         {/* Recommendations */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-foreground">Recommended For You</h3>
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground">Recommended For You</h3>
             <Button
               variant="outline"
               size="sm"
               onClick={() => router.push("/courses")}
+              className="text-xs sm:text-sm w-full sm:w-auto"
             >
-              View All Courses
+              <span className="hidden sm:inline">View All Courses</span>
+              <span className="sm:hidden">All Courses</span>
             </Button>
           </div>
           {loading ? (
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="border border-border rounded-lg overflow-hidden animate-pulse">
-                  <div className="h-32 bg-muted"></div>
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-3 bg-muted rounded w-1/2"></div>
-                    <div className="h-2 bg-muted rounded"></div>
+                  <div className="h-24 sm:h-32 bg-muted"></div>
+                  <div className="p-3 sm:p-4 space-y-2">
+                    <div className="h-3 sm:h-4 bg-muted rounded w-3/4"></div>
+                    <div className="h-2 sm:h-3 bg-muted rounded w-1/2"></div>
+                    <div className="h-1 sm:h-2 bg-muted rounded"></div>
                   </div>
                 </div>
               ))}
             </div>
           ) : recommendations.length > 0 ? (
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {recommendations.map((rec, idx) => (
                 <div
                   key={rec.id || idx}
                   className="border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => router.push(`/courses/${rec.id}`)}
                 >
-                  <div className="h-32 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
-                    <BookOpen className="w-12 h-12 text-primary/50" />
+                  <div className="h-24 sm:h-32 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center">
+                    <BookOpen className="w-8 h-8 sm:w-12 sm:h-12 text-primary/50" />
                   </div>
-                  <div className="p-4">
-                    <h4 className="font-semibold text-foreground text-sm mb-1 line-clamp-2">{rec.title}</h4>
-                    <p className="text-xs text-muted-foreground mb-3">{rec.category}</p>
+                  <div className="p-3 sm:p-4">
+                    <h4 className="font-semibold text-foreground text-xs sm:text-sm mb-1 line-clamp-2 break-words">{rec.title}</h4>
+                    <p className="text-xs text-muted-foreground mb-2 sm:mb-3">{rec.category}</p>
                     <div className="flex items-center gap-1">
                       <div className="flex-1 h-1 bg-muted rounded-full">
                         <div className="h-1 bg-accent rounded-full" style={{ width: `${Math.min(rec.popularity, 100)}%` }} />

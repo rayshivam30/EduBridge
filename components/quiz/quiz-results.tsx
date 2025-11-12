@@ -71,11 +71,11 @@ export function QuizResults() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {Array.from({ length: 5 }).map((_, i) => (
           <Card key={i} className="animate-pulse">
-            <CardContent className="p-6">
-              <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <CardContent className="p-3 sm:p-6">
+              <div className="h-16 sm:h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
             </CardContent>
           </Card>
         ))}
@@ -111,69 +111,70 @@ export function QuizResults() {
   const totalTimeSpent = attempts.reduce((acc, attempt) => acc + attempt.timeSpent, 0)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/quiz">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="text-sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Quizzes
+            <span className="hidden sm:inline">Back to Quizzes</span>
+            <span className="sm:hidden">Back</span>
           </Button>
         </Link>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="w-5 h-5 text-blue-600" />
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+              <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                 Total Attempts
               </span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               {totalAttempts}
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy className="w-5 h-5 text-yellow-600" />
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+              <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                 Average Score
               </span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               {Math.round(averageScore)}%
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="w-5 h-5 text-green-600" />
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+              <Target className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                 Best Score
               </span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               {Math.round(bestScore)}%
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-5 h-5 text-purple-600" />
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                 Time Spent
               </span>
             </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               {formatTime(totalTimeSpent)}
             </div>
           </CardContent>
@@ -183,43 +184,45 @@ export function QuizResults() {
       {/* Quiz Attempts List */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Quiz Attempts</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Recent Quiz Attempts</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {attempts.map((attempt, index) => (
               <motion.div
                 key={attempt.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base break-words">
                         {attempt.quiz.title}
                       </h3>
-                      <Badge className={getDifficultyColor(attempt.quiz.difficulty)}>
-                        {attempt.quiz.difficulty}
-                      </Badge>
-                      <Badge variant="outline">
-                        {attempt.quiz.topic}
-                      </Badge>
+                      <div className="flex gap-2">
+                        <Badge className={`${getDifficultyColor(attempt.quiz.difficulty)} text-xs`}>
+                          {attempt.quiz.difficulty}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {attempt.quiz.topic}
+                        </Badge>
+                      </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-xs sm:text-sm">
                       <div className="flex items-center gap-1">
-                        <Trophy className="w-4 h-4 text-yellow-600" />
+                        <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-600 flex-shrink-0" />
                         <span className="text-gray-600 dark:text-gray-400">Score:</span>
-                        <span className={`font-medium ${getScoreColor(attempt.score, attempt.totalPoints)}`}>
+                        <span className={`font-medium ${getScoreColor(attempt.score, attempt.totalPoints)} break-all`}>
                           {attempt.score}/{attempt.totalPoints} ({Math.round((attempt.score / attempt.totalPoints) * 100)}%)
                         </span>
                       </div>
                       
                       <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-blue-600" />
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
                         <span className="text-gray-600 dark:text-gray-400">Time:</span>
                         <span className="font-medium text-gray-900 dark:text-white">
                           {formatTime(attempt.timeSpent)}
@@ -227,7 +230,7 @@ export function QuizResults() {
                       </div>
                       
                       <div className="flex items-center gap-1">
-                        <Target className="w-4 h-4 text-green-600" />
+                        <Target className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
                         <span className="text-gray-600 dark:text-gray-400">Questions:</span>
                         <span className="font-medium text-gray-900 dark:text-white">
                           {attempt.quiz.questions.length}
@@ -235,7 +238,7 @@ export function QuizResults() {
                       </div>
                       
                       <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4 text-purple-600" />
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
                         <span className="text-gray-600 dark:text-gray-400">Date:</span>
                         <span className="font-medium text-gray-900 dark:text-white">
                           {format(new Date(attempt.createdAt), 'MMM dd, yyyy')}
@@ -244,13 +247,14 @@ export function QuizResults() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 sm:flex-shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => window.open(`/quiz/${attempt.quiz.id}`, '_blank')}
+                      className="text-xs sm:text-sm w-full sm:w-auto"
                     >
-                      <Eye className="w-4 h-4 mr-1" />
+                      <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                       Retake
                     </Button>
                   </div>

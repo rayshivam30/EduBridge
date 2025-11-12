@@ -125,11 +125,11 @@ export function StudentProfileClient() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navigation currentPage="profile" onNavigate={onNavigate} />
       
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <div className="space-y-4 sm:space-y-6">
           {/* Profile Header */}
           <Card>
             <CardHeader>
@@ -152,15 +152,15 @@ export function StudentProfileClient() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-start gap-6">
-                <Avatar className="w-20 h-20">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                <Avatar className="w-16 h-16 sm:w-20 sm:h-20 mx-auto sm:mx-0">
                   <AvatarImage src={session?.user?.image || ""} />
                   <AvatarFallback className="text-lg">
                     {profileData.name?.charAt(0)?.toUpperCase() || "S"}
                   </AvatarFallback>
                 </Avatar>
                 
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-4 w-full min-w-0">
                   {editing ? (
                     <div className="space-y-4">
                       <div>
@@ -194,17 +194,21 @@ export function StudentProfileClient() {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <h2 className="text-2xl font-bold">{profileData.name || "Student"}</h2>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Mail className="w-4 h-4" />
-                        {profileData.email}
+                    <div className="space-y-2 text-center sm:text-left">
+                      <h2 className="text-xl sm:text-2xl font-bold break-words">{profileData.name || "Student"}</h2>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-muted-foreground">
+                        <div className="flex items-center justify-center sm:justify-start gap-2">
+                          <Mail className="w-4 h-4 flex-shrink-0" />
+                          <span className="break-all text-sm">{profileData.email}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-4 h-4" />
-                        Joined {profileData.joinDate}
+                      <div className="flex items-center justify-center sm:justify-start gap-2 text-muted-foreground">
+                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                        <span className="text-sm">Joined {profileData.joinDate}</span>
                       </div>
-                      <Badge variant="secondary">Student</Badge>
+                      <div className="flex justify-center sm:justify-start">
+                        <Badge variant="secondary">Student</Badge>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -213,44 +217,44 @@ export function StudentProfileClient() {
           </Card>
 
           {/* Learning Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <BookOpen className="w-6 h-6 text-blue-600" />
+                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                    <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">{profileData.enrolledCourses}</p>
-                    <p className="text-sm text-muted-foreground">Enrolled Courses</p>
+                  <div className="min-w-0">
+                    <p className="text-xl sm:text-2xl font-bold">{profileData.enrolledCourses}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Enrolled Courses</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Trophy className="w-6 h-6 text-green-600" />
+                  <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">{profileData.completedCourses}</p>
-                    <p className="text-sm text-muted-foreground">Completed Courses</p>
+                  <div className="min-w-0">
+                    <p className="text-xl sm:text-2xl font-bold">{profileData.completedCourses}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Completed Courses</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-6">
+            <Card className="sm:col-span-2 lg:col-span-1">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Clock className="w-6 h-6 text-purple-600" />
+                  <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                    <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">{Math.round(profileData.totalProgress)}%</p>
-                    <p className="text-sm text-muted-foreground">Average Progress</p>
+                  <div className="min-w-0">
+                    <p className="text-xl sm:text-2xl font-bold">{Math.round(profileData.totalProgress)}%</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Average Progress</p>
                   </div>
                 </div>
               </CardContent>
@@ -260,13 +264,13 @@ export function StudentProfileClient() {
           {/* Account Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Account Information</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Account Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <Label className="text-sm font-medium">Email Address</Label>
-                  <p className="text-sm text-muted-foreground mt-1">{profileData.email}</p>
+                  <p className="text-sm text-muted-foreground mt-1 break-all">{profileData.email}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Account Type</Label>

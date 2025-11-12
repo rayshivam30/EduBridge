@@ -249,56 +249,64 @@ export function QuizDashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Brain className="w-8 h-8 text-purple-600" />
-          <div>
-            <h2 className="text-2xl font-bold">Quiz Dashboard</h2>
-            <p className="text-gray-600 dark:text-gray-400">
+          <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 flex-shrink-0" />
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold break-words">Quiz Dashboard</h2>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Create, take, and share AI-generated quizzes
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button onClick={() => setShowCreator(true)} className="gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+          <Button onClick={() => setShowCreator(true)} className="gap-2 text-sm">
             <Plus className="w-4 h-4" />
-            Create Quiz
+            <span className="hidden sm:inline">Create Quiz</span>
+            <span className="sm:hidden">Create</span>
           </Button>
           <Button
             variant="outline"
             onClick={() => router.push('/quiz/results')}
-            className="gap-2"
+            className="gap-2 text-sm"
           >
             <BarChart3 className="w-4 h-4" />
-            View Results
+            <span className="hidden sm:inline">View Results</span>
+            <span className="sm:hidden">Results</span>
           </Button>
-
         </div>
       </div>
 
       <Tabs defaultValue="my-quizzes" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="my-quizzes">My Quizzes ({quizzes.length})</TabsTrigger>
-          <TabsTrigger value="public-quizzes">Public Quizzes ({publicQuizzes.length})</TabsTrigger>
-          <TabsTrigger value="offline-quiz" className="gap-2">
-            {isOnline ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-            Offline Quiz
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="my-quizzes" className="text-xs sm:text-sm px-2 py-2">
+            <span className="hidden sm:inline">My Quizzes ({quizzes.length})</span>
+            <span className="sm:hidden">My ({quizzes.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="public-quizzes" className="text-xs sm:text-sm px-2 py-2">
+            <span className="hidden sm:inline">Public Quizzes ({publicQuizzes.length})</span>
+            <span className="sm:hidden">Public ({publicQuizzes.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="offline-quiz" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2">
+            {isOnline ? <Wifi className="w-3 h-3 sm:w-4 sm:h-4" /> : <WifiOff className="w-3 h-3 sm:w-4 sm:h-4" />}
+            <span className="hidden sm:inline">Offline Quiz</span>
+            <span className="sm:hidden">Offline</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="my-quizzes" className="space-y-4">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Card key={i} className="animate-pulse">
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
                     <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <CardContent className="pt-0">
+                    <div className="h-16 sm:h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
                   </CardContent>
                 </Card>
               ))}
@@ -320,7 +328,7 @@ export function QuizDashboard() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {quizzes.map((quiz) => (
                 <motion.div
                   key={quiz.id}
@@ -330,41 +338,42 @@ export function QuizDashboard() {
                   transition={{ duration: 0.2 }}
                 >
                   <Card className="h-full cursor-pointer hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg line-clamp-2">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-base sm:text-lg line-clamp-2 min-w-0 break-words">
                           {quiz.title}
                         </CardTitle>
-                        <Badge className={getDifficultyColor(quiz.difficulty)}>
+                        <Badge className={`${getDifficultyColor(quiz.difficulty)} text-xs flex-shrink-0`}>
                           {quiz.difficulty}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
                         Topic: {quiz.topic}
                       </p>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-0">
                       {quiz.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 line-clamp-2">
                           {quiz.description}
                         </p>
                       )}
 
-                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
                         <span className="flex items-center gap-1">
-                          <Brain className="w-4 h-4" />
-                          {quiz.questions.length} questions
+                          <Brain className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="truncate">{quiz.questions.length} questions</span>
                         </span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {new Date(quiz.createdAt).toLocaleDateString()}
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="truncate text-xs">{new Date(quiz.createdAt).toLocaleDateString()}</span>
                         </span>
                       </div>
 
                       <div className="space-y-2">
                         <Button
                           onClick={() => setSelectedQuiz(quiz)}
-                          className="w-full gap-2"
+                          className="w-full gap-2 text-sm"
+                          size="sm"
                         >
                           <Play className="w-4 h-4" />
                           Take Quiz
@@ -374,7 +383,7 @@ export function QuizDashboard() {
                             onClick={() => setShowLeaderboard(quiz)}
                             variant="outline"
                             size="sm"
-                            className="w-full gap-2"
+                            className="w-full gap-2 text-xs"
                           >
                             <Trophy className="w-4 h-4" />
                             Leaderboard
@@ -403,7 +412,7 @@ export function QuizDashboard() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {publicQuizzes.map((quiz) => (
                 <motion.div
                   key={quiz.id}
@@ -413,51 +422,52 @@ export function QuizDashboard() {
                   transition={{ duration: 0.2 }}
                 >
                   <Card className="h-full cursor-pointer hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg line-clamp-2">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-base sm:text-lg line-clamp-2 min-w-0 break-words">
                           {quiz.title}
                         </CardTitle>
-                        <Badge className={getDifficultyColor(quiz.difficulty)}>
+                        <Badge className={`${getDifficultyColor(quiz.difficulty)} text-xs flex-shrink-0`}>
                           {quiz.difficulty}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
                         Topic: {quiz.topic}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span>by {quiz.createdBy.name}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        <span className="truncate">by {quiz.createdBy.name}</span>
                         {quiz._count?.attempts && (
                           <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
+                            <Users className="w-3 h-3 flex-shrink-0" />
                             {quiz._count.attempts} attempts
                           </span>
                         )}
                       </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-0">
                       {quiz.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 line-clamp-2">
                           {quiz.description}
                         </p>
                       )}
 
-                      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
                         <span className="flex items-center gap-1">
-                          <Brain className="w-4 h-4" />
-                          {quiz.questions.length} questions
+                          <Brain className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="truncate">{quiz.questions.length} questions</span>
                         </span>
                         <span className="flex items-center gap-1">
-                          <Star className="w-4 h-4" />
-                          Public
+                          <Star className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span className="truncate">Public</span>
                         </span>
                       </div>
 
                       <div className="space-y-2">
                         <Button
                           onClick={() => setSelectedQuiz(quiz)}
-                          className="w-full gap-2"
+                          className="w-full gap-2 text-sm"
                           variant="outline"
+                          size="sm"
                         >
                           <Play className="w-4 h-4" />
                           Take Quiz
@@ -466,7 +476,7 @@ export function QuizDashboard() {
                           onClick={() => setShowLeaderboard(quiz)}
                           variant="ghost"
                           size="sm"
-                          className="w-full gap-2"
+                          className="w-full gap-2 text-xs"
                         >
                           <Trophy className="w-4 h-4" />
                           Leaderboard
@@ -512,12 +522,12 @@ export function QuizDashboard() {
                     const isDownloading = downloadingQuizzes.has(quiz.id)
 
                     return (
-                      <div key={quiz.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h5 className="font-medium text-sm">{quiz.title}</h5>
+                      <div key={quiz.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                            <h5 className="font-medium text-sm break-words">{quiz.title}</h5>
                             {isDownloaded && (
-                              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
+                              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs w-fit">
                                 <Check className="h-3 w-3 mr-1" />
                                 Downloaded
                               </Badge>
@@ -532,7 +542,7 @@ export function QuizDashboard() {
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           {!isDownloaded && (
                             <Button
                               size="sm"
@@ -575,11 +585,13 @@ export function QuizDashboard() {
                                 }
                               }}
                               disabled={!isOnline || isDownloading}
+                              className="text-xs"
                             >
                               {isDownloading ? (
                                 <>
                                   <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin mr-1" />
-                                  Downloading...
+                                  <span className="hidden sm:inline">Downloading...</span>
+                                  <span className="sm:hidden">Loading...</span>
                                 </>
                               ) : (
                                 <>
@@ -599,9 +611,11 @@ export function QuizDashboard() {
                               }
                             }}
                             disabled={!isOnline && !isDownloaded}
+                            className="text-xs"
                           >
                             <Play className="h-3 w-3 mr-1" />
-                            Take Quiz
+                            <span className="hidden sm:inline">Take Quiz</span>
+                            <span className="sm:hidden">Take</span>
                           </Button>
 
                           {isDownloaded && (
@@ -622,7 +636,7 @@ export function QuizDashboard() {
                                   toast.error('Failed to remove quiz')
                                 }
                               }}
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 p-2"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>

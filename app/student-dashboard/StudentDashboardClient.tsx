@@ -30,7 +30,7 @@ export function StudentDashboardClient() {
   const onNavigate = (page: string) => router.push(pageToPath(page))
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navigation currentPage="student-dashboard" onNavigate={onNavigate} />
       <StudentDashboard onNavigate={onNavigate} />
     </div>
