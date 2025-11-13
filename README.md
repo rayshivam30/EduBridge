@@ -366,11 +366,6 @@ EduBridge provides a comprehensive REST API for all platform features:
 - `POST /api/ai/quiz-generate` - Generate AI quiz
 - `POST /api/ai/revision` - AI-powered revision
 
-<details>
-<summary>📖 View detailed API documentation</summary>
-
-
-</details>
 
 ## 🔒 Security Features
 
