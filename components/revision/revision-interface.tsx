@@ -17,10 +17,12 @@ import {
   Lightbulb,
   ArrowLeft,
   Volume2,
-  VolumeX
+  VolumeX,
+  History
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { RevisionHistory } from "./revision-history"
 
 interface RevisionFeedback {
   overallScore: number
@@ -41,6 +43,8 @@ export function RevisionInterface() {
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([])
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [microphoneSupported, setMicrophoneSupported] = useState(true)
+  const [showHistory, setShowHistory] = useState(false)
+  const [wasVoiceInput, setWasVoiceInput] = useState(false)
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
@@ -180,6 +184,7 @@ export function RevisionInterface() {
       if (response.ok) {
         const data = await response.json()
         setExplanation(data.transcript)
+        setWasVoiceInput(true)
         toast.success("Audio transcribed successfully!")
       } else {
         const errorData = await response.json().catch(() => ({}))
@@ -199,7 +204,9 @@ export function RevisionInterface() {
       return
     }
 
+    const startTime = Date.now()
     setIsLoading(true)
+    
     try {
       const response = await fetch("/api/revision/analyze", {
         method: "POST",
@@ -213,7 +220,54 @@ export function RevisionInterface() {
       if (response.ok) {
         const data = await response.json()
         setFeedback(data.feedback)
-        toast.success("AI analysis complete!")
+        
+        // Save the revision session
+        const duration = Math.floor((Date.now() - startTime) / 1000)
+        const selectedCourse = enrolledCourses.find(e => e.course?.title === selectedTopic)
+        
+        if (selectedCourse) {
+          try {
+            console.log("Saving revision session:", {
+              courseId: selectedCourse.course.id,
+              topic: selectedTopic,
+              score: data.feedback.overallScore
+            })
+            
+            const saveResponse = await fetch("/api/revision/save", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                courseId: selectedCourse.course.id,
+                topic: selectedTopic,
+                explanation: explanation.trim(),
+                score: data.feedback.overallScore,
+                feedback: data.feedback,
+                duration,
+                method: wasVoiceInput ? "voice" : "text"
+              })
+            })
+            
+            if (saveResponse.ok) {
+              const saveData = await saveResponse.json()
+              console.log("Save response:", saveData)
+              if (saveData.pointsEarned > 0) {
+                toast.success(`Analysis complete! You earned ${saveData.pointsEarned} points! 🎉`)
+              } else {
+                toast.success("AI analysis complete!")
+              }
+            } else {
+              const errorData = await saveResponse.json().catch(() => ({}))
+              console.error("Save failed:", errorData)
+              toast.success("AI analysis complete! (Session not saved)")
+            }
+          } catch (saveError) {
+            console.error("Error saving session:", saveError)
+            toast.success("AI analysis complete!")
+          }
+        } else {
+          console.log("No selected course found for saving")
+          toast.success("AI analysis complete!")
+        }
       } else {
         const errorData = await response.json().catch(() => ({}))
         toast.error(errorData.error || "Failed to analyze your explanation")
@@ -258,7 +312,12 @@ export function RevisionInterface() {
     setExplanation("")
     setFeedback(null)
     setIsRecording(false)
+    setWasVoiceInput(false)
     if (isSpeaking) stopSpeaking()
+  }
+
+  if (showHistory) {
+    return <RevisionHistory onClose={() => setShowHistory(false)} />
   }
 
   return (
@@ -266,16 +325,27 @@ export function RevisionInterface() {
       <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/student-dashboard")}
-            className="gap-2 self-start"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to Dashboard</span>
-            <span className="sm:hidden">Back</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/student-dashboard")}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHistory(true)}
+              className="gap-2"
+            >
+              <History className="w-4 h-4" />
+              <span className="hidden sm:inline">History</span>
+            </Button>
+          </div>
           <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex-shrink-0">
               <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />

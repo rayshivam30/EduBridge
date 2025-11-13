@@ -49,6 +49,8 @@ model User {
   announcements    Announcement[]
   announcementLikes AnnouncementLike[]
   learningSessions LearningSession[]
+  revisionSessions RevisionSession[]
+  revisionStreak   RevisionStreak?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -106,6 +108,7 @@ model Course {
   payments      Payment[]
   announcements Announcement[]
   learningSessions LearningSession[]
+  revisionSessions RevisionSession[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -355,4 +358,39 @@ model AnnouncementLike {
 
   @@unique([userId, announcementId])
   @@index([announcementId])
+}
+
+// Revision Models
+model RevisionSession {
+  id          String @id @default(cuid())
+  userId      String
+  courseId    String
+  topic       String
+  explanation String
+  score       Int
+  feedback    Json   // Store the complete feedback object
+  duration    Int    @default(0) // Time spent in seconds
+  method      String @default("text") // "text" or "voice"
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([createdAt])
+}
+
+model RevisionStreak {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  currentStreak Int     @default(0)
+  longestStreak Int     @default(0)
+  lastRevisionDate DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
