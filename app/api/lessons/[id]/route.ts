@@ -6,18 +6,18 @@ import { redis } from "@/lib/redis"
 
 const lessonUpdateInput = z.object({
   title: z.string().min(1).optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   contentTypes: z.array(z.string()).optional(),
-  textContent: z.string().optional(),
+  textContent: z.string().nullable().optional(),
   externalLinks: z.array(z.string()).optional(),
-  videoType: z.enum(["upload", "youtube"]).optional(),
-  videoUrl: z.string().optional(),
-  videoPublicId: z.string().optional(),
-  youtubeUrl: z.string().optional(),
+  videoType: z.enum(["upload", "youtube"]).nullable().optional(),
+  videoUrl: z.string().nullable().optional(),
+  videoPublicId: z.string().nullable().optional(),
+  youtubeUrl: z.string().nullable().optional(),
   order: z.number().int().positive().optional(),
   // Keep old fields for backward compatibility
   type: z.enum(["video", "text", "link"]).optional(),
-  content: z.string().optional(),
+  content: z.string().nullable().optional(),
 })
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -89,16 +89,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     // Prepare data for Prisma update
     const prismaUpdateData: any = {}
     
-    // Handle new fields
+    // Handle new fields - explicitly handle null values
     if (updateData.title !== undefined) prismaUpdateData.title = updateData.title
-    if (updateData.description !== undefined) prismaUpdateData.description = updateData.description
+    if (updateData.description !== undefined) prismaUpdateData.description = updateData.description || null
     if (updateData.contentTypes !== undefined) prismaUpdateData.contentTypes = updateData.contentTypes
-    if (updateData.textContent !== undefined) prismaUpdateData.textContent = updateData.textContent
+    if (updateData.textContent !== undefined) prismaUpdateData.textContent = updateData.textContent || null
     if (updateData.externalLinks !== undefined) prismaUpdateData.externalLinks = updateData.externalLinks
-    if (updateData.videoType !== undefined) prismaUpdateData.videoType = updateData.videoType
-    if (updateData.videoUrl !== undefined) prismaUpdateData.videoUrl = updateData.videoUrl
-    if (updateData.videoPublicId !== undefined) prismaUpdateData.videoPublicId = updateData.videoPublicId
-    if (updateData.youtubeUrl !== undefined) prismaUpdateData.youtubeUrl = updateData.youtubeUrl
+    if (updateData.videoType !== undefined) prismaUpdateData.videoType = updateData.videoType || null
+    if (updateData.videoUrl !== undefined) prismaUpdateData.videoUrl = updateData.videoUrl || null
+    if (updateData.videoPublicId !== undefined) prismaUpdateData.videoPublicId = updateData.videoPublicId || null
+    if (updateData.youtubeUrl !== undefined) prismaUpdateData.youtubeUrl = updateData.youtubeUrl || null
     if (updateData.order !== undefined) prismaUpdateData.order = updateData.order
     
     // Handle backward compatibility
@@ -118,13 +118,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     // Clear cache
     await redis.del(`course:${existingLesson.courseId}:v1`)
-    const userCacheKey = `courses:list:v1:${session.user.id}`
+    const userCacheKey = `courses:list:v2:${session.user.id}`
     await redis.del(userCacheKey)
 
     return NextResponse.json(lesson)
   } catch (e) {
     console.error("Error updating lesson:", e)
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: "Validation failed", 
+        details: e.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
+      }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Failed to update lesson" }, { status: 500 })
   }
 }
 
@@ -157,7 +163,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     // Clear cache
     await redis.del(`course:${existingLesson.courseId}:v1`)
-    const userCacheKey = `courses:list:v1:${session.user.id}`
+    const userCacheKey = `courses:list:v2:${session.user.id}`
     await redis.del(userCacheKey)
 
     return NextResponse.json({ success: true })

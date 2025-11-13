@@ -35,12 +35,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           } 
         },
         lessons: {
-          orderBy: { order: "asc" },
-          select: {
-            id: true,
-            title: true,
-            order: true
-          }
+          orderBy: { order: "asc" }
         }
       },
     })
@@ -87,7 +82,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     // Clear cache
     await redis.del(`course:${id}:v1`)
-    const userCacheKey = `courses:list:v1:${session.user.id}`
+    const userCacheKey = `courses:list:v2:${session.user.id}`
     await redis.del(userCacheKey)
     // Clear public cache if status was changed to/from published
     if (updateData.status === "published" || existingCourse.status === "published") {
@@ -97,7 +92,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json(course)
   } catch (e) {
     console.error("Error updating course:", e)
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: "Validation failed", 
+        details: e.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
+      }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Failed to update course" }, { status: 500 })
   }
 }
 
@@ -127,7 +128,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     // Clear cache
     await redis.del(`course:${id}:v1`)
-    const userCacheKey = `courses:list:v1:${session.user.id}`
+    const userCacheKey = `courses:list:v2:${session.user.id}`
     await redis.del(userCacheKey)
     // Clear public cache if the deleted course was published
     if (existingCourse.status === "published") {

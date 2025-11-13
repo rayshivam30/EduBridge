@@ -7,18 +7,18 @@ import { redis } from "@/lib/redis"
 const lessonInput = z.object({
   courseId: z.string(),
   title: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   contentTypes: z.array(z.string()).default([]),
-  textContent: z.string().optional(),
+  textContent: z.string().nullable().optional(),
   externalLinks: z.array(z.string()).default([]),
-  videoType: z.enum(["upload", "youtube"]).optional(),
-  videoUrl: z.string().optional(),
-  videoPublicId: z.string().optional(),
-  youtubeUrl: z.string().optional(),
+  videoType: z.enum(["upload", "youtube"]).nullable().optional(),
+  videoUrl: z.string().nullable().optional(),
+  videoPublicId: z.string().nullable().optional(),
+  youtubeUrl: z.string().nullable().optional(),
   order: z.number().int().positive(),
   // Keep old fields for backward compatibility
   type: z.enum(["video", "text", "link"]).optional(),
-  content: z.string().optional(),
+  content: z.string().nullable().optional(),
 })
 
 export async function POST(req: Request) {
@@ -79,13 +79,19 @@ export async function POST(req: Request) {
 
     // Clear course cache
     await redis.del(`course:${courseId}:v1`)
-    const userCacheKey = `courses:list:v1:${session.user.id}`
+    const userCacheKey = `courses:list:v2:${session.user.id}`
     await redis.del(userCacheKey)
 
     return NextResponse.json(lesson, { status: 201 })
   } catch (e) {
     console.error("Error creating lesson:", e)
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 })
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: "Validation failed", 
+        details: e.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
+      }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Failed to create lesson" }, { status: 500 })
   }
 }
 

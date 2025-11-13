@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { TeacherDashboard } from "@/components/teacher-dashboard"
 
 function pageToPath(page: string): string {
+  console.log("Navigating to page:", page) // Debug log
   switch (page) {
     case "landing":
       return "/"
@@ -21,7 +22,10 @@ function pageToPath(page: string): string {
       return "/community-forum"
     case "create-course":
       return "/create-course"
+    case "manage-course":
+      return "/manage-course"
     default:
+      console.log("Unknown page, defaulting to /:", page)
       return "/"
   }
 }

@@ -156,12 +156,8 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
     [items]
   )
 
-  // State for showing all courses
-  const [showAllCourses, setShowAllCourses] = useState(false)
-  
-  // Limit courses shown in dashboard to 3 (unless expanded)
-  const displayedCourses = useMemo(() => 
-    showAllCourses ? list : list.slice(0, 3), [list, showAllCourses])
+  // Limit courses shown in dashboard to 3
+  const displayedCourses = useMemo(() => list.slice(0, 3), [list])
   const hasMoreCourses = list.length > 3
 
   const dynamicStats = useMemo(() => {
@@ -259,11 +255,18 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                   </span>
                 )}
               </div>
-              <Button onClick={() => onNavigate?.("create-course")} className="gap-2 w-full sm:w-auto text-sm">
-                <Plus className="w-4 h-4" /> 
-                <span className="hidden sm:inline">Create Course</span>
-                <span className="sm:hidden">Create</span>
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button onClick={() => window.location.href = "/manage-course"} variant="outline" className="gap-2 flex-1 sm:flex-none text-sm">
+                  <BookOpen className="w-4 h-4" /> 
+                  <span className="hidden sm:inline">Manage All</span>
+                  <span className="sm:hidden">Manage</span>
+                </Button>
+                <Button onClick={() => window.location.href = "/create-course"} className="gap-2 flex-1 sm:flex-none text-sm">
+                  <Plus className="w-4 h-4" /> 
+                  <span className="hidden sm:inline">Create Course</span>
+                  <span className="sm:hidden">Create</span>
+                </Button>
+              </div>
             </div>
             <div className="space-y-3 sm:space-y-4">
               {list.length > 0 ? displayedCourses.map((course, idx) => (
@@ -277,7 +280,7 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                       <p className="text-xs sm:text-sm text-muted-foreground">{course.students} students enrolled</p>
                     </div>
                     <div className="flex gap-1 sm:gap-2 flex-shrink-0">
-                      <Button onClick={() => (typeof (course as any).id === "string" ? (window.location.href = `/teacher-course-preview/${(course as any).id}`) : onNavigate?.("course-player"))} variant="ghost" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation">
+                      <Button onClick={() => typeof (course as any).id === "string" ? (window.location.href = `/teacher-course-preview/${(course as any).id}`) : (window.location.href = "/course-player")} variant="ghost" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation">
                         <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span className="hidden sm:inline">View</span>
                       </Button>
@@ -310,7 +313,7 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                   <h3 className="text-base sm:text-lg font-medium text-foreground mb-2 sm:mb-3">No courses yet</h3>
                   <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 break-words px-4">Start building your first course to share knowledge with students</p>
                   <div className="flex gap-2 justify-center px-4">
-                    <Button onClick={() => onNavigate?.("create-course")} className="gap-2 w-full sm:w-auto text-sm">
+                    <Button onClick={() => window.location.href = "/create-course"} className="gap-2 w-full sm:w-auto text-sm">
                       <Plus className="w-4 h-4" />
                       <span className="hidden sm:inline">Create Your First Course</span>
                       <span className="sm:hidden">Create Course</span>
@@ -319,24 +322,7 @@ export function TeacherDashboard({ onNavigate }: TeacherDashboardProps) {
                 </div>
               )}
               
-              {/* View All/Show Less Courses Button */}
-              {hasMoreCourses && (
-                <div className="pt-3 sm:pt-4 border-t border-border">
-                  <Button 
-                    variant="outline" 
-                    className="w-full gap-2 text-sm"
-                    onClick={() => setShowAllCourses(!showAllCourses)}
-                  >
-                    <BookOpen className="w-4 h-4" />
-                    <span>
-                      {showAllCourses 
-                        ? "Show Less" 
-                        : `View All Courses (${list.length})`
-                      }
-                    </span>
-                  </Button>
-                </div>
-              )}
+
             </div>
           </Card>
 

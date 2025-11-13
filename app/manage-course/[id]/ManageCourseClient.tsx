@@ -89,6 +89,10 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
       const res = await fetch(`/api/courses/${courseId}`)
       if (res.ok) {
         const data = await res.json()
+        // Ensure price is a number
+        if (data.price) {
+          data.price = Number(data.price)
+        }
         setCourse(data)
       } else if (res.status === 403) {
         alert("You don't have permission to edit this course")
@@ -129,12 +133,39 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
   const saveCourse = async (status?: "draft" | "published" | "archived") => {
     if (!course) return
 
+    // Validate course data
+    if (!course.title.trim()) {
+      alert("Please enter a course title")
+      return
+    }
+    
+    if (course.title.trim().length < 3) {
+      alert("Course title must be at least 3 characters long")
+      return
+    }
+    
+    if (!course.description.trim()) {
+      alert("Please enter a course description")
+      return
+    }
+    
+    if (course.description.trim().length < 10) {
+      alert("Course description must be at least 10 characters long")
+      return
+    }
+    
+    const priceValue = Number(course.price)
+    if (isNaN(priceValue) || priceValue < 0) {
+      alert("Please enter a valid price (0 or greater)")
+      return
+    }
+
     setSaving(true)
     try {
       const updateData: any = {
-        title: course.title,
-        description: course.description,
-        price: course.price
+        title: course.title.trim(),
+        description: course.description.trim(),
+        price: priceValue
       }
       
       if (status) {
@@ -152,11 +183,25 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
         setCourse(prev => prev ? { ...prev, ...updatedCourse } : null)
         alert("Course updated successfully!")
       } else {
-        throw new Error("Failed to update course")
+        let errorMessage = `Failed to update course (${res.status})`
+        
+        try {
+          const errorData = await res.json()
+          // Handle validation errors more user-friendly
+          if (errorData.error === "Validation failed" && errorData.details) {
+            errorMessage = `Validation Error: ${errorData.details}`
+          } else {
+            errorMessage = errorData.error || errorData.details || errorMessage
+          }
+        } catch (jsonError) {
+          const textResponse = await res.text().catch(() => "No response body")
+          errorMessage = textResponse || errorMessage
+        }
+        
+        throw new Error(errorMessage)
       }
     } catch (error) {
-      console.error("Error updating course:", error)
-      alert("Failed to update course")
+      alert(`Failed to update course: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setSaving(false)
     }
@@ -174,6 +219,7 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
       videoUrl: "",
       videoPublicId: "",
       youtubeUrl: "",
+      videoType: undefined,
       order: (course?.lessons.length || 0) + 1
     }
     setEditingLesson(newLesson)
@@ -183,31 +229,32 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
   const saveLesson = async (lesson: Lesson) => {
     try {
       const lessonData = {
-        title: lesson.title,
-        description: lesson.description,
-        contentTypes: lesson.contentTypes,
-        textContent: lesson.textContent,
-        externalLinks: lesson.externalLinks,
-        videoType: lesson.videoType,
-        videoUrl: lesson.videoUrl,
-        videoPublicId: lesson.videoPublicId,
-        youtubeUrl: lesson.youtubeUrl,
+        title: lesson.title.trim(),
+        description: lesson.description?.trim() || null,
+        contentTypes: lesson.contentTypes || [],
+        textContent: lesson.textContent?.trim() || null,
+        externalLinks: lesson.externalLinks?.filter(link => link.trim()) || [],
+        videoType: lesson.videoType || null,
+        videoUrl: lesson.videoUrl?.trim() || null,
+        videoPublicId: lesson.videoPublicId?.trim() || null,
+        youtubeUrl: lesson.youtubeUrl?.trim() || null,
         order: lesson.order,
         // Keep old field for backward compatibility
-        content: lesson.textContent || lesson.videoUrl || lesson.youtubeUrl || lesson.contentURL
+        content: lesson.textContent?.trim() || lesson.videoUrl?.trim() || lesson.youtubeUrl?.trim() || lesson.contentURL?.trim() || null
       }
 
+      let res: Response
+      
       if (lesson.id) {
         // Update existing lesson
-        const res = await fetch(`/api/lessons/${lesson.id}`, {
+        res = await fetch(`/api/lessons/${lesson.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(lessonData)
         })
-        if (!res.ok) throw new Error("Failed to update lesson")
       } else {
         // Create new lesson
-        const res = await fetch("/api/lessons", {
+        res = await fetch("/api/lessons", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -215,16 +262,29 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
             ...lessonData
           })
         })
-        if (!res.ok) throw new Error("Failed to create lesson")
+      }
+
+      if (!res.ok) {
+        let errorMessage = `Failed to ${lesson.id ? 'update' : 'create'} lesson (${res.status})`
+        
+        try {
+          const errorData = await res.json()
+          errorMessage = errorData.error || errorData.details || errorMessage
+        } catch (jsonError) {
+          const textResponse = await res.text().catch(() => "No response body")
+          errorMessage = textResponse || errorMessage
+        }
+        
+        throw new Error(errorMessage)
       }
       
       // Reload course data
       await loadCourse()
       setEditingLesson(null)
       setShowLessonForm(false)
+      alert(`Lesson ${lesson.id ? 'updated' : 'created'} successfully!`)
     } catch (error) {
-      console.error("Error saving lesson:", error)
-      alert("Failed to save lesson")
+      alert(`Failed to save lesson: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -259,6 +319,7 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
       videoPublicId: lesson.videoPublicId || "",
       youtubeUrl: lesson.youtubeUrl || "",
       videoType: lesson.videoType || undefined,
+      contentURL: lesson.contentURL || ""
     }
     
     setEditingLesson(normalizedLesson)
@@ -398,9 +459,10 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
                     id="title"
                     value={course.title}
                     onChange={(e) => handleCourseChange("title", e.target.value)}
-                    placeholder="Enter course title"
+                    placeholder="Enter course title (minimum 3 characters)"
                     className="h-11"
                   />
+                  <p className="text-xs text-muted-foreground">Minimum 3 characters required</p>
                 </div>
 
                 <div className="grid gap-2">
@@ -409,10 +471,11 @@ export function ManageCourseClient({ params }: { params: Promise<{ id: string }>
                     id="description"
                     value={course.description}
                     onChange={(e) => handleCourseChange("description", e.target.value)}
-                    placeholder="Describe what students will learn in this course"
+                    placeholder="Describe what students will learn in this course (minimum 10 characters)"
                     rows={4}
                     className="resize-none"
                   />
+                  <p className="text-xs text-muted-foreground">Minimum 10 characters required</p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -615,10 +678,40 @@ function LessonForm({ lesson, onSave, onCancel }: LessonFormProps) {
       alert("Please enter a lesson title")
       return
     }
-    if ((!formData.contentTypes || formData.contentTypes.length === 0) && !formData.videoType && !formData.contentURL) {
-      alert("Please select at least one content type or add content")
+    
+    // Check if any content is provided
+    const hasTextContent = formData.contentTypes?.includes("text") && formData.textContent?.trim()
+    const hasLinks = formData.contentTypes?.includes("links") && formData.externalLinks && formData.externalLinks.length > 0
+    const hasUploadVideo = formData.videoType === "upload" && formData.videoUrl?.trim()
+    const hasYouTubeVideo = formData.videoType === "youtube" && formData.youtubeUrl?.trim()
+    const hasLegacyContent = formData.contentURL?.trim()
+    
+    if (!hasTextContent && !hasLinks && !hasUploadVideo && !hasYouTubeVideo && !hasLegacyContent) {
+      alert("Please add some content to the lesson (text, links, or video)")
       return
     }
+    
+    // Validate specific content types
+    if (formData.contentTypes?.includes("text") && !formData.textContent?.trim()) {
+      alert("Please add text content or uncheck the Text/Notes option")
+      return
+    }
+    
+    if (formData.contentTypes?.includes("links") && (!formData.externalLinks || formData.externalLinks.length === 0)) {
+      alert("Please add at least one external link or uncheck the External Links option")
+      return
+    }
+    
+    if (formData.videoType === "upload" && !formData.videoUrl?.trim()) {
+      alert("Please upload a video file or change the video type")
+      return
+    }
+    
+    if (formData.videoType === "youtube" && !formData.youtubeUrl?.trim()) {
+      alert("Please add a YouTube URL or embed code")
+      return
+    }
+    
     onSave(formData)
   }
 
@@ -637,6 +730,13 @@ function LessonForm({ lesson, onSave, onCancel }: LessonFormProps) {
 
   const addExternalLink = () => {
     if (newExternalLink.trim()) {
+      // Basic URL validation
+      const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
+      if (!urlPattern.test(newExternalLink.trim())) {
+        alert("Please enter a valid URL")
+        return
+      }
+      
       setFormData(prev => ({
         ...prev,
         externalLinks: [...(prev.externalLinks || []), newExternalLink.trim()]
