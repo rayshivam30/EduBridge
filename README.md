@@ -132,11 +132,17 @@ DATABASE_URL="postgresql://username:password@localhost:5432/edubridge"
 NEXTAUTH_SECRET="your-super-secret-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 
+# OAuth Providers (Required for social login)
+GITHUB_ID="your-github-oauth-app-id"
+GITHUB_SECRET="your-github-oauth-app-secret"
+GOOGLE_ID="your-google-oauth-client-id"
+GOOGLE_SECRET="your-google-oauth-client-secret"
+
 # AI Services (Required for AI features)
 GROQ_API_KEY="your-groq-api-key"
 
 # Cloudinary (Required for media uploads)
-CLOUDINARY_CLOUD_NAME="your-cloud-name"
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
 
@@ -162,13 +168,30 @@ createdb edubridge
 2. Create a new project
 3. Copy the connection string to `DATABASE_URL`
 
+#### OAuth Providers Setup
+
+**GitHub OAuth App**
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Click "New OAuth App"
+3. Set Authorization callback URL to: `http://localhost:3000/api/auth/callback/github`
+4. Copy Client ID to `GITHUB_ID`
+5. Generate and copy Client Secret to `GITHUB_SECRET`
+
+**Google OAuth App**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable Google+ API
+4. Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
+5. Set Authorized redirect URI to: `http://localhost:3000/api/auth/callback/google`
+6. Copy Client ID to `GOOGLE_ID`
+7. Copy Client Secret to `GOOGLE_SECRET`
+
 #### AI Service Setup
 
 **Groq (Primary AI Provider)**
 1. Sign up at [groq.com](https://groq.com/)
 2. Generate API key
 3. Add to `GROQ_API_KEY`
-
 
 #### Media Storage Setup
 
@@ -481,38 +504,9 @@ Ensure these are set in your production environment:
 - `NEXTAUTH_URL` should be your production domain
 - Database should be production-ready (not local)
 
-## 📊 Performance & Monitoring
-
-### Built-in Performance Features
-
-- **Next.js Optimizations**: Automatic code splitting, image optimization
-- **PWA Caching**: Offline-first architecture with service workers
-- **Database Optimization**: Prisma query optimization and connection pooling
-- **CDN Integration**: Cloudinary for optimized media delivery
-
-### Monitoring Setup
-
-```bash
-# Vercel Analytics (included)
-# Automatically tracks Core Web Vitals
-
-# Custom monitoring can be added via:
-# - Sentry for error tracking
-# - LogRocket for session replay
-# - DataDog for infrastructure monitoring
-```
-
-### Performance Best Practices
-
-- Images are automatically optimized via Next.js Image component
-- API routes use proper caching headers
-- Database queries are optimized with Prisma
-- Bundle size is monitored and optimized
-- Core Web Vitals are tracked in production
-
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions!
 
 ### Quick Contribution Steps
 
