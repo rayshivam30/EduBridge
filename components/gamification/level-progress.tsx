@@ -23,13 +23,13 @@ export function LevelProgress({
   const pointsNeeded = pointsForNextLevel - currentPoints
 
   return (
-    <div className={cn('bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700', className)}>
-      <div className="flex items-center justify-between mb-3 gap-3">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+    <div className={cn('bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700 overflow-hidden box-border', className)}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0">
             {level}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
               Level {level}
             </h3>
@@ -39,7 +39,7 @@ export function LevelProgress({
           </div>
         </div>
         
-        <div className="text-right flex-shrink-0">
+        <div className="text-left sm:text-right flex-shrink-0 ml-10 sm:ml-0">
           <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Progress</div>
           <div className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
             {Math.round(progressToNextLevel)}%
@@ -47,16 +47,18 @@ export function LevelProgress({
         </div>
       </div>
 
-      <ProgressBar 
-        progress={progressToNextLevel} 
-        color="purple"
-        showPercentage={false}
-        className="mb-2"
-      />
+      <div className="w-full overflow-hidden">
+        <ProgressBar 
+          progress={progressToNextLevel} 
+          color="purple"
+          showPercentage={false}
+          className="mb-2"
+        />
+      </div>
       
-      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-        <span>{currentPoints.toLocaleString()} XP</span>
-        <span>{pointsForNextLevel.toLocaleString()} XP</span>
+      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 gap-2">
+        <span className="truncate">{currentPoints.toLocaleString()} XP</span>
+        <span className="truncate">{pointsForNextLevel.toLocaleString()} XP</span>
       </div>
     </div>
   )

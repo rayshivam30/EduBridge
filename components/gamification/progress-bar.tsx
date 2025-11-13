@@ -25,27 +25,31 @@ export function ProgressBar({
     orange: 'bg-orange-500'
   }
 
+  // Ensure progress is between 0 and 100
+  const clampedProgress = Math.min(Math.max(progress, 0), 100)
+
   return (
     <div className={cn('w-full', className)}>
-      <div className="flex items-center justify-between mb-1">
-        {showPercentage && (
+      {showPercentage && (
+        <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {Math.round(progress)}%
+            {Math.round(clampedProgress)}%
           </span>
-        )}
-      </div>
-      <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+        </div>
+      )}
+      <div className="relative w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
         {animated ? (
           <motion.div
-            className={cn('h-2.5 rounded-full', colorClasses[color])}
+            className={cn('absolute top-0 left-0 h-full rounded-full', colorClasses[color])}
             initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
+            animate={{ width: `${clampedProgress}%` }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
+            style={{ maxWidth: '100%' }}
           />
         ) : (
           <div
-            className={cn('h-2.5 rounded-full', colorClasses[color])}
-            style={{ width: `${progress}%` }}
+            className={cn('absolute top-0 left-0 h-full rounded-full', colorClasses[color])}
+            style={{ width: `${clampedProgress}%`, maxWidth: '100%' }}
           />
         )}
       </div>
