@@ -2,9 +2,22 @@
 
 **Learn Anywhere. Anytime. Together.**
 
-EduBridge is a modern, offline-first learning platform that connects rural and urban students with equal access to educational resources. Built with Next.js 16, it features AI-powered tutoring, interactive quizzes, community forums, and comprehensive course management.
+EduBridge is a modern, offline-first learning platform that bridges the educational gap between rural and urban students. Built with cutting-edge technologies, it provides equal access to quality education through AI-powered tutoring, interactive content, gamified learning, and robust community features.
 
-🚀 **[Live Demo](https://edu-bridge-lac.vercel.app/)**
+🚀 **[Live Demo](https://edu-bridge-lac.vercel.app/)** | 🐛 **[Report Bug](https://github.com/rayshivam30/edubridge/issues)**
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Tech Stack](#️-tech-stack)
+- [Quick Start](#-quick-start)
+- [Project Structure](#️-project-structure)
+- [Key Features Deep Dive](#-key-features-deep-dive)
+- [PWA Installation](#-pwa-installation)
+- [Available Scripts](#-available-scripts)
+- [API Documentation](#-api-documentation)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
 
 ## ✨ Features
 
@@ -37,89 +50,144 @@ EduBridge is a modern, offline-first learning platform that connects rural and u
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **Next.js 16** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
-- **Radix UI** - Accessible component primitives
-- **Framer Motion** - Smooth animations
-- **React Hook Form** - Form management with Zod validation
+<table>
+<tr>
+<td>
 
-### Backend & Database
-- **Prisma** - Type-safe database ORM
-- **PostgreSQL** - Primary database (Neon)
-- **NextAuth.js** - Authentication system
-- **Upstash Redis** - Caching and session storage
+**Frontend**
+- [Next.js 16](https://nextjs.org/) - React framework with App Router
+- [TypeScript](https://www.typescriptlang.org/) - Type-safe development
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first styling
+- [Radix UI](https://www.radix-ui.com/) - Accessible component primitives
+- [Framer Motion](https://www.framer.com/motion/) - Smooth animations
+- [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) - Form management
 
-### AI & External Services
-- **Groq SDK** - Fast AI inference
-- **Cloudinary** - Media management and optimization
+</td>
+<td>
 
-### PWA & Performance
-- **Workbox** - Service worker and offline functionality
-- **Dexie** - IndexedDB wrapper for offline data
-- **Vercel Analytics** - Performance monitoring
+**Backend & Database**
+- [Prisma](https://www.prisma.io/) - Type-safe database ORM
+- [PostgreSQL](https://www.postgresql.org/) - Primary database (Neon)
+- [NextAuth.js](https://next-auth.js.org/) - Authentication system
+- [Upstash Redis](https://upstash.com/) - Caching and session storage
 
-## 🚀 Getting Started
+</td>
+</tr>
+<tr>
+<td>
+
+**AI & External Services**
+- [Groq SDK](https://groq.com/) - Fast AI inference
+- [Cloudinary](https://cloudinary.com/) - Media management
+
+</td>
+<td>
+
+**PWA & Performance**
+- [Workbox](https://developers.google.com/web/tools/workbox) - Service worker functionality
+- [Dexie](https://dexie.org/) - IndexedDB wrapper for offline data
+
+</td>
+</tr>
+</table>
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
-- pnpm (recommended) or npm
-- PostgreSQL database (or Neon account)
-- Cloudinary account for media storage
 
-### Installation
+Ensure you have the following installed:
+- **Node.js** 20+ ([Download](https://nodejs.org/))
+- **pnpm** ([Install guide](https://pnpm.io/installation))
+- **PostgreSQL** database or [Neon](https://neon.tech/) account
+- **Cloudinary** account for media storage
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd edubridge
-   ```
+### One-Click Setup
 
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
+```bash
+# Clone and setup
+git clone <repository-url>
+cd edubridge
+pnpm install
 
-3. **Environment Setup**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Configure your `.env` file with:
-   ```env
-   # Database
-   DATABASE_URL="postgresql://..."
-   
-   # NextAuth
-   NEXTAUTH_SECRET="your-secret-key"
-   NEXTAUTH_URL="http://localhost:3000"
-   
-   # AI Services
-   GROQ_API_KEY="your-groq-key"
-   
-   # Cloudinary
-   CLOUDINARY_CLOUD_NAME="your-cloud-name"
-   CLOUDINARY_API_KEY="your-api-key"
-   CLOUDINARY_API_SECRET="your-api-secret"
-   
-   # Redis (Upstash)
-   UPSTASH_REDIS_REST_URL="your-redis-url"
-   UPSTASH_REDIS_REST_TOKEN="your-redis-token"
-   ```
+# Setup environment (copy and configure)
+cp .env.example .env
 
-4. **Database Setup**
-   ```bash
-   pnpm prisma generate
-   pnpm prisma db push
-   ```
+# Initialize database
+pnpm prisma generate
+pnpm prisma db push
 
-5. **Start Development Server**
-   ```bash
-   pnpm dev
-   ```
+# Start development
+pnpm dev
+```
 
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+### Environment Configuration
+
+Create a `.env` file in the root directory:
+
+```env
+# Database (Required)
+DATABASE_URL="postgresql://username:password@localhost:5432/edubridge"
+
+# NextAuth (Required)
+NEXTAUTH_SECRET="your-super-secret-key-here"
+NEXTAUTH_URL="http://localhost:3000"
+
+# AI Services (Required for AI features)
+GROQ_API_KEY="your-groq-api-key"
+
+# Cloudinary (Required for media uploads)
+CLOUDINARY_CLOUD_NAME="your-cloud-name"
+CLOUDINARY_API_KEY="your-api-key"
+CLOUDINARY_API_SECRET="your-api-secret"
+
+# Redis (Optional - for caching)
+UPSTASH_REDIS_REST_URL="your-redis-url"
+UPSTASH_REDIS_REST_TOKEN="your-redis-token"
+```
+
+<details>
+<summary>🔧 Detailed Setup Instructions</summary>
+
+#### Database Setup Options
+
+**Option 1: Local PostgreSQL**
+```bash
+# Install PostgreSQL locally
+# Create database
+createdb edubridge
+```
+
+**Option 2: Neon (Recommended)**
+1. Sign up at [neon.tech](https://neon.tech/)
+2. Create a new project
+3. Copy the connection string to `DATABASE_URL`
+
+#### AI Service Setup
+
+**Groq (Primary AI Provider)**
+1. Sign up at [groq.com](https://groq.com/)
+2. Generate API key
+3. Add to `GROQ_API_KEY`
+
+
+#### Media Storage Setup
+
+**Cloudinary**
+1. Sign up at [cloudinary.com](https://cloudinary.com/)
+2. Get your cloud name, API key, and secret
+3. Add to respective environment variables
+
+</details>
+
+### Verify Installation
+
+```bash
+# Check if everything is working
+pnpm run lint          # Should pass without errors
+pnpm run build         # Should build successfully
+```
+
+Open [http://localhost:3000](http://localhost:3000) to see your application running! 🎉
 
 ## 📱 PWA Installation
 
@@ -131,52 +199,75 @@ EduBridge works as a Progressive Web App:
 
 ## 🏗️ Project Structure
 
+<details>
+<summary>📁 Detailed Project Structure</summary>
+
 ```
-├── app/                    # Next.js App Router pages
-│   ├── actions/           # Server actions
-│   ├── api/               # API routes
-│   ├── ai-tutor/          # AI tutoring interface
-│   ├── announcements/     # Announcements management
-│   ├── community-forum/   # Discussion forums
-│   ├── course-player/     # Course content player
-│   ├── courses/           # Course browsing and management
-│   ├── create-course/     # Course creation interface
-│   ├── login/             # Authentication pages
-│   ├── signup/            # User registration
-│   ├── onboarding/        # User role selection
-│   ├── quiz/              # Quiz interface
-│   ├── student*/          # Student-specific pages
-│   ├── teacher*/          # Teacher-specific pages
-│   └── manage-course/     # Course management tools
-├── components/            # Reusable UI components
-│   ├── gamification/      # Achievement and progress components
-│   ├── quiz/              # Quiz-related components
-│   ├── revision/          # Study revision tools
-│   └── ui/                # Base UI components (Radix UI)
-├── hooks/                 # Custom React hooks
-│   ├── use-gamification.ts # Gamification logic
-│   ├── use-offline*.ts    # Offline functionality hooks
-│   └── use-mobile.ts      # Mobile-specific hooks
-├── lib/                   # Utility functions and configurations
-│   ├── aiClient.ts        # AI service integrations
-│   ├── auth.ts            # NextAuth configuration
-│   ├── cloudinary.ts      # Media upload handling
-│   ├── gamification.ts    # Points and achievements logic
-│   ├── offline-*.ts       # Offline data management
-│   ├── prisma.ts          # Database client
-│   └── utils.ts           # General utilities
-├── prisma/               # Database schema and migrations
-│   ├── migrations/        # Database migration files
-│   ├── schema.prisma      # Database schema definition
-│   └── seed.ts            # Database seeding script
-├── public/               # Static assets and PWA files
-│   ├── icon-*.png         # PWA icons
-│   ├── manifest.json      # PWA manifest
-│   ├── sw.js              # Service worker
-│   └── placeholder.*      # Placeholder images
-├── styles/               # Global styles
-└── middleware.ts         # Route protection and authentication
+edubridge/
+├── 📁 app/                     # Next.js App Router (main application)
+│   ├── 📁 actions/            # Server actions for data mutations
+│   ├── 📁 api/                # REST API endpoints
+│   │   ├── auth/              # Authentication endpoints
+│   │   ├── courses/           # Course management API
+│   │   ├── ai/                # AI-powered features API
+│   │   └── gamification/      # Points and achievements API
+│   ├── 📁 ai-tutor/           # AI tutoring chat interface
+│   ├── 📁 announcements/      # Teacher announcements system
+│   ├── 📁 community-forum/    # Discussion forums
+│   ├── 📁 course-player/      # Interactive course content player
+│   ├── 📁 courses/            # Course catalog and browsing
+│   ├── 📁 create-course/      # Course creation wizard
+│   ├── 📁 login/ & signup/    # Authentication pages
+│   ├── 📁 onboarding/         # User role selection flow
+│   ├── 📁 quiz/               # Interactive quiz system
+│   ├── 📁 student*/           # Student dashboard and features
+│   ├── 📁 teacher*/           # Teacher dashboard and tools
+│   └── 📁 manage-course/      # Course management interface
+├── 📁 components/             # Reusable React components
+│   ├── 📁 gamification/       # Achievement badges, progress bars
+│   ├── 📁 quiz/               # Quiz components and logic
+│   ├── 📁 revision/           # AI-powered revision tools
+│   └── 📁 ui/                 # Base UI components (Radix UI)
+├── 📁 hooks/                  # Custom React hooks
+│   ├── use-gamification.ts    # Points, streaks, achievements
+│   ├── use-offline-*.ts       # PWA offline functionality
+│   └── use-mobile.ts          # Mobile-responsive utilities
+├── 📁 lib/                    # Core utilities and configurations
+│   ├── aiClient.ts            # AI service integrations (Groq, OpenAI)
+│   ├── auth.ts                # NextAuth.js configuration
+│   ├── cloudinary.ts          # Media upload and management
+│   ├── gamification.ts        # Gamification logic and calculations
+│   ├── offline-*.ts           # Offline data synchronization
+│   ├── prisma.ts              # Database client configuration
+│   └── utils.ts               # General utility functions
+├── 📁 prisma/                 # Database layer
+│   ├── 📁 migrations/         # Database migration history
+│   ├── schema.prisma          # Database schema (PostgreSQL)
+│   └── seed.ts                # Sample data seeding
+├── 📁 public/                 # Static assets
+│   ├── 📁 icons/              # PWA icons (various sizes)
+│   ├── manifest.json          # PWA manifest configuration
+│   ├── sw.js                  # Service worker for offline support
+│   └── 📁 images/             # Static images and placeholders
+├── 📁 styles/                 # Global CSS and Tailwind config
+├── 📄 middleware.ts           # Route protection and auth middleware
+├── 📄 next.config.mjs         # Next.js configuration
+├── 📄 tailwind.config.js      # Tailwind CSS configuration
+└── 📄 tsconfig.json           # TypeScript configuration
 ```
+
+</details>
+
+### Key Directories Explained
+
+| Directory | Purpose |
+|-----------|---------|
+| `app/` | Next.js 13+ App Router - all pages and API routes |
+| `components/` | Reusable UI components organized by feature |
+| `lib/` | Core business logic, utilities, and configurations |
+| `prisma/` | Database schema, migrations, and seeding |
+| `hooks/` | Custom React hooks for shared logic |
+| `public/` | Static assets, PWA files, and images |
 
 ## 🎯 Key Features Deep Dive
 
@@ -188,7 +279,7 @@ EduBridge works as a Progressive Web App:
 
 ### AI Tutoring
 - **Contextual Help**: AI understands course content and student progress
-- **Multiple AI Providers**: Fallback system with Google AI, OpenAI, and Groq
+- **AI Provider**: Fallback system with Groq
 - **Personalized Responses**: Tailored explanations based on learning level
 
 ### Gamification System
@@ -199,43 +290,253 @@ EduBridge works as a Progressive Web App:
 
 ## 🔧 Available Scripts
 
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start development server with hot reload |
+| `pnpm build` | Build optimized production bundle |
+| `pnpm start` | Start production server |
+| `pnpm lint` | Run ESLint for code quality checks |
+| `pnpm prisma generate` | Generate Prisma client |
+| `pnpm prisma db push` | Push schema changes to database |
+| `pnpm prisma studio` | Open Prisma Studio (database GUI) |
+| `pnpm prisma migrate dev` | Create and apply new migration |
+
+### Development Workflow
+
 ```bash
-# Development
-pnpm dev          # Start development server
-pnpm build        # Build for production
-pnpm start        # Start production server
+# Daily development
+pnpm dev                    # Start development server
 
-# Database
-pnpm prisma generate    # Generate Prisma client
-pnpm prisma db push     # Push schema to database
-pnpm prisma studio      # Open Prisma Studio
+# Database changes
+pnpm prisma db push         # Quick schema updates
+pnpm prisma migrate dev     # Create proper migrations
 
-# Code Quality
-pnpm lint         # Run ESLint
-pnpm type-check   # Run TypeScript compiler
+# Code quality
+pnpm lint                   # Check for linting issues
+pnpm build                  # Verify production build
 ```
+
+## 📚 API Documentation
+
+EduBridge provides a comprehensive REST API for all platform features:
+
+### Authentication Endpoints
+- `POST /api/auth/signin` - User authentication
+- `POST /api/auth/signup` - User registration
+- `GET /api/auth/session` - Get current session
+
+### Course Management
+- `GET /api/courses` - List all courses
+- `POST /api/courses` - Create new course
+- `GET /api/courses/[id]` - Get course details
+- `PUT /api/courses/[id]` - Update course
+- `DELETE /api/courses/[id]` - Delete course
+
+### Learning & Progress
+- `POST /api/progress` - Update learning progress
+- `GET /api/progress/[userId]` - Get user progress
+- `POST /api/quiz/attempt` - Submit quiz attempt
+- `GET /api/gamification/achievements` - Get user achievements
+
+### AI Features
+- `POST /api/ai/tutor` - AI tutoring chat
+- `POST /api/ai/quiz-generate` - Generate AI quiz
+- `POST /api/ai/revision` - AI-powered revision
+
+<details>
+<summary>📖 View detailed API documentation</summary>
+
+
+</details>
+
+## 🔒 Security Features
+
+- **Authentication**: Secure NextAuth.js implementation
+- **Authorization**: Role-based access control (Student/Teacher)
+- **Data Protection**: Input validation with Zod schemas
+- **CSRF Protection**: Built-in Next.js CSRF protection
+- **Rate Limiting**: API rate limiting for abuse prevention
+- **Secure Headers**: Security headers configured
+
+## 🔧 Troubleshooting
+
+<details>
+<summary>Common Issues and Solutions</summary>
+
+### Database Connection Issues
+```bash
+# Check if DATABASE_URL is correct
+echo $DATABASE_URL
+
+# Reset database connection
+pnpm prisma db push --force-reset
+pnpm prisma generate
+```
+
+### Build Errors
+```bash
+# Clear Next.js cache
+rm -rf .next
+
+# Clear node_modules and reinstall
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
+
+# Check TypeScript errors
+pnpm tsc --noEmit
+```
+
+### Environment Variables Not Loading
+```bash
+# Ensure .env is in root directory
+ls -la .env
+
+# Restart development server after .env changes
+pnpm dev
+```
+
+### AI Features Not Working
+- Verify API keys are set correctly in `.env`
+- Check API key permissions and quotas
+- Ensure network connectivity to AI services
+
+### PWA Not Installing
+- Check if running on HTTPS (required for PWA)
+- Verify `manifest.json` is accessible
+- Clear browser cache and try again
+
+</details>
+
+### Getting Help
+
+If you encounter issues:
+
+1. **Check the logs** - Look at browser console and terminal output
+2. **Search existing issues** - Check [GitHub Issues](https://github.com/rayshivam30/edubridge/issues)
+3. **Create a new issue** - Provide detailed error messages and steps to reproduce
+4. **Join our community** - Get help from other developers
 
 ## 🌐 Deployment
 
 **Live Application**: [https://edu-bridge-lac.vercel.app/](https://edu-bridge-lac.vercel.app/)
 
-### Vercel (Recommended)
-1. Connect your repository to Vercel
-2. Configure environment variables
-3. Deploy automatically on push to main
+### Deploy to Vercel (Recommended)
 
-### Manual Deployment
-```bash
-pnpm build
-pnpm start
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/rayshivam30/edubridge)
+
+**Manual Vercel Setup:**
+1. Fork this repository
+2. Connect to [Vercel](https://vercel.com/)
+3. Import your forked repository
+4. Configure environment variables in Vercel dashboard
+5. Deploy automatically on push to main branch
+
+### Alternative Deployment Options
+
+<details>
+<summary>Docker Deployment</summary>
+
+```dockerfile
+# Dockerfile (create this file)
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
 ```
+
+```bash
+# Build and run
+docker build -t edubridge .
+docker run -p 3000:3000 edubridge
+```
+
+</details>
+
+<details>
+<summary>Manual Server Deployment</summary>
+
+```bash
+# On your server
+git clone <your-repo>
+cd edubridge
+pnpm install
+pnpm build
+
+# Set up environment variables
+# Configure reverse proxy (nginx/apache)
+# Set up process manager (PM2)
+pm2 start npm --name "edubridge" -- start
+```
+
+</details>
+
+### Environment Variables for Production
+
+Ensure these are set in your production environment:
+- All variables from `.env` example
+- `NEXTAUTH_URL` should be your production domain
+- Database should be production-ready (not local)
+
+## 📊 Performance & Monitoring
+
+### Built-in Performance Features
+
+- **Next.js Optimizations**: Automatic code splitting, image optimization
+- **PWA Caching**: Offline-first architecture with service workers
+- **Database Optimization**: Prisma query optimization and connection pooling
+- **CDN Integration**: Cloudinary for optimized media delivery
+
+### Monitoring Setup
+
+```bash
+# Vercel Analytics (included)
+# Automatically tracks Core Web Vitals
+
+# Custom monitoring can be added via:
+# - Sentry for error tracking
+# - LogRocket for session replay
+# - DataDog for infrastructure monitoring
+```
+
+### Performance Best Practices
+
+- Images are automatically optimized via Next.js Image component
+- API routes use proper caching headers
+- Database queries are optimized with Prisma
+- Bundle size is monitored and optimized
+- Core Web Vitals are tracked in production
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
----
+### Quick Contribution Steps
+
+1. **Fork** the repository
+2. **Clone** your fork: `git clone <your-fork-url>`
+3. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+4. **Make** your changes and test them
+5. **Commit** with clear messages: `git commit -m 'Add amazing feature'`
+6. **Push** to your branch: `git push origin feature/amazing-feature`
+7. **Open** a Pull Request with a clear description
+
+### Development Guidelines
+
+- Follow the existing code style and conventions
+- Write meaningful commit messages
+- Add tests for new features when applicable
+- Update documentation as needed
+- Ensure CI passes before submitting PR
+
+### Areas for Contribution
+
+- 🐛 Bug fixes and improvements
+- ✨ New features and enhancements
+- 📚 Documentation improvements
+- 🎨 UI/UX enhancements
+- 🔧 Performance optimizations
+- 🌐 Internationalization (i18n)
