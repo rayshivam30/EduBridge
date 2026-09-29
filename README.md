@@ -127,6 +127,8 @@ Create a `.env` file in the root directory:
 ```env
 # Database (Required)
 DATABASE_URL="postgresql://username:password@localhost:5432/edubridge"
+# Same as DATABASE_URL locally; on Neon use the non-pooler URL (Vercel migrations)
+DIRECT_URL="postgresql://username:password@localhost:5432/edubridge"
 
 # NextAuth (Required)
 NEXTAUTH_SECRET="your-super-secret-key-here"
@@ -166,7 +168,7 @@ createdb edubridge
 **Option 2: Neon (Recommended)**
 1. Sign up at [neon.tech](https://neon.tech/)
 2. Create a new project
-3. Copy the connection string to `DATABASE_URL`
+3. Copy the **pooled** connection string to `DATABASE_URL` and the **direct** string to `DIRECT_URL` (required for `prisma migrate deploy` on Vercel)
 
 #### OAuth Providers Setup
 
